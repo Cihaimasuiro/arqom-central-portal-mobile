@@ -4,7 +4,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/live_clock_widget.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final Function(int)? onNavigateTab;
+
+  const HomeScreen({super.key, this.onNavigateTab});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +21,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             _buildProfileGreeting(context),
             const SizedBox(height: 16),
-            _buildShiftInfo(context),
+            _buildDailyQuote(context),
             const SizedBox(height: 16),
             _buildAttendanceStatus(context),
             const SizedBox(height: 16),
@@ -196,39 +198,6 @@ class HomeScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShiftInfo(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.schedule, color: AppColors.primary, size: 18),
-                const SizedBox(width: 8),
-                Flexible(child: Text('Shift Pagi Regular', style: Theme.of(context).textTheme.labelMedium, overflow: TextOverflow.ellipsis)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '08:30 - 17:30 WIB',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
           ),
         ],
       ),
@@ -490,10 +459,32 @@ class HomeScreen extends StatelessWidget {
                 mainAxisExtent: 92,
               ),
               children: [
-                _buildQuickActionItem(context, Icons.history_toggle_off, 'Kehadiran', AppColors.primaryFixed, AppColors.primary),
+                _buildQuickActionItem(
+                  context,
+                  Icons.history_toggle_off,
+                  'Kehadiran',
+                  AppColors.primaryFixed,
+                  AppColors.primary,
+                  onTap: () {
+                    if (onNavigateTab != null) {
+                      onNavigateTab!(1); // Index 1 is Kehadiran tab
+                    }
+                  },
+                ),
                 _buildQuickActionItem(context, Icons.menu_book, 'Logbook', AppColors.secondaryFixed, AppColors.secondary),
                 _buildQuickActionItem(context, Icons.flag, 'Rencana', AppColors.surfaceContainerHigh, AppColors.primaryContainer),
-                _buildQuickActionItem(context, Icons.event_available, 'Pengajuan', AppColors.errorContainer.withOpacity(0.6), AppColors.error),
+                _buildQuickActionItem(
+                  context,
+                  Icons.event_available,
+                  'Pengajuan',
+                  AppColors.errorContainer.withOpacity(0.6),
+                  AppColors.error,
+                  onTap: () {
+                    if (onNavigateTab != null) {
+                      onNavigateTab!(3); // Index 3 is Pengajuan tab
+                    }
+                  },
+                ),
                 _buildQuickActionItem(context, Icons.flight_takeoff, 'Dinas Luar', AppColors.tertiaryFixed, AppColors.tertiary),
                 _buildQuickActionItem(context, Icons.folder_special, 'SOP & Arsip', AppColors.surfaceContainerHighest, AppColors.onSurfaceVariant),
                 _buildQuickActionItem(context, Icons.groups, 'Daftar Tim', AppColors.primaryFixedDim.withOpacity(0.4), AppColors.primary),
@@ -506,9 +497,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActionItem(BuildContext context, IconData icon, String label, Color bgColor, Color iconColor) {
+  Widget _buildQuickActionItem(BuildContext context, IconData icon, String label, Color bgColor, Color iconColor, {VoidCallback? onTap}) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap ?? () {},
       borderRadius: BorderRadius.circular(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -904,6 +895,87 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  static const List<Map<String, String>> _dailyQuotes = [
+    {
+      'text': 'Maka sesungguhnya bersama kesulitan ada kemudahan.',
+      'source': 'QS. Al-Insyirah: 5'
+    },
+    {
+      'text': 'Dan bersabarlah, karena sesungguhnya Allah tidak menyia-nyiakan pahala orang yang berbuat kebaikan.',
+      'source': 'QS. Hud: 115'
+    },
+    {
+      'text': 'Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.',
+      'source': 'QS. Al-Baqarah: 286'
+    },
+    {
+      'text': 'Boleh jadi kamu membenci sesuatu, padahal ia amat baik bagimu.',
+      'source': 'QS. Al-Baqarah: 216'
+    },
+    {
+      'text': 'Sesungguhnya Allah beserta orang-orang yang sabar.',
+      'source': 'QS. Al-Baqarah: 153'
+    },
+    {
+      'text': 'Maka nikmat Tuhan kamu yang manakah yang kamu dustakan?',
+      'source': 'QS. Ar-Rahman: 13'
+    },
+    {
+      'text': 'Barangsiapa bertakwa kepada Allah niscaya Dia akan membukakan jalan keluar baginya.',
+      'source': 'QS. At-Talaq: 2'
+    },
+  ];
+
+  Widget _buildDailyQuote(BuildContext context) {
+    final int dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final quote = _dailyQuotes[dayOfYear % _dailyQuotes.length];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.format_quote_rounded, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Kutipan Hari Ini', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '"${quote['text']}"',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: AppColors.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '- ${quote['source']}',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.outline),
+            ),
+          ),
+        ],
       ),
     );
   }

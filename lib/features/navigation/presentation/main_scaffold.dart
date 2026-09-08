@@ -3,6 +3,7 @@ import '../../home/presentation/home_screen.dart';
 import '../../attendance/presentation/attendance_screen.dart';
 import '../../performance/presentation/performance_screen.dart';
 import '../../requests/presentation/requests_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -14,11 +15,12 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
+  List<Widget> get _pages => [
+    HomeScreen(onNavigateTab: _onItemTapped),
     const AttendanceScreen(),
     const PerformanceScreen(),
     const RequestsScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -64,6 +66,11 @@ class _MainScaffoldState extends State<MainScaffold> {
               icon: Icon(Icons.event_available_outlined),
               activeIcon: Icon(Icons.event_available),
               label: 'Pengajuan',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profil',
             ),
           ],
         ),
