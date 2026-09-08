@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="id"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Central Portal</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "outline-variant": "#c4c5d7", "on-primary-fixed-variant": "#0039b5", "on-secondary-container": "#006f66", "secondary-fixed-dim": "#6bd8cb", "tertiary-fixed-dim": "#4cd7f6", "surface-tint": "#2151da", "on-background": "#131b2e", "primary-fixed": "#dce1ff", "tertiary-fixed": "#acedff", "on-primary-fixed": "#001551", "on-error-container": "#93000a", "surface-container-high": "#e2e7ff", "surface-dim": "#d2d9f4", "on-secondary": "#ffffff", "on-primary": "#ffffff", "surface-variant": "#dae2fd", "secondary-container": "#86f2e4", "surface-container-highest": "#dae2fd", "surface-container-lowest": "#ffffff", "tertiary": "#004b59", "on-tertiary-container": "#75e3ff", "surface-bright": "#faf8ff", "background": "#faf8ff", "outline": "#747686", "error-container": "#ffdad6", "primary": "#0037b0", "secondary-fixed": "#89f5e7", "on-tertiary": "#ffffff", "inverse-primary": "#b7c4ff", "on-primary-container": "#cad3ff", "on-surface": "#131b2e", "surface": "#faf8ff", "on-surface-variant": "#434655", "tertiary-container": "#006577", "inverse-surface": "#283044", "on-tertiary-fixed-variant": "#004e5c", "on-error": "#ffffff", "surface-container-low": "#f2f3ff", "primary-fixed-dim": "#b7c4ff", "primary-container": "#1d4ed8", "on-tertiary-fixed": "#001f26", "surface-container": "#eaedff", "error": "#ba1a1a", "secondary": "#006a61", "inverse-on-surface": "#eef0ff", "on-secondary-fixed": "#00201d", "on-secondary-fixed-variant": "#005049" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-lg": "1.25rem", "space-xs": "0.5rem", "card-padding": "1rem", "space-2xl": "2rem", "space-md": "1rem", "nav-height": "4.25rem", "space-sm": "0.75rem", "space-2xs": "0.25rem", "screen-margin": "1rem", "space-xl": "1.5rem", "card-gutter": "0.75rem" }, "fontFamily": { "headline-lg": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "numeric-stat": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "700" }], "title-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "numeric-stat": ["32px", { "lineHeight": "38px", "fontWeight": "800" }], "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "700" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24; }</style></head><body class="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-full flex flex-col"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(19,27,46,0.04)] pt-safe"><div class="w-full px-screen-margin pt-space-2xs pb-space-2xs flex items-center justify-between text-on-surface-variant"><span class="font-label-md text-label-md text-on-surface font-semibold tracking-tight">09:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_4_bar</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[18px]">battery_full</span></div></div><div class="h-14 px-screen-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0 flex-1"><img alt="Central Portal Brand Logo" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1UQ5FkFHc88tQwC2SjPZs73JEpqNHidwBKqTHwBm0x8z1Jb3pqe4PkR-nyuqVecTLhXJ8KDwLOXHepCs7JDDhGyJPyNbxMNiqGe4HbG8WfKgwuq_q1NDzL65Gd7eRGfmCsUzZARLuPiiIq2krQDXc1pjGuqXJt3bQBcMLqbkrfcFdZx8ZxetmKnrJqQ7JbRB692emYWPnXUPcgezu0PJDulMRWjB1iMdCwW9jsdRNJxRwyFlzFXJH_NAQ"/><div class="flex flex-col min-w-0"><span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold truncate">Central Portal</span><h1 class="font-title-sm text-title-sm text-on-surface font-bold truncate">Kehadiran</h1></div></div><div class="flex items-center gap-space-xs flex-shrink-0"><button aria-label="Notifikasi" class="relative w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span></button><div class="relative flex items-center justify-center p-space-2xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQaJC_jqiMNv49kn_uPFhMrLFxMpa3Qu3nY6nqMPw-N6uQ_jRmb97FIVoScHuTlylqtomh7l4_6GV1H0_OdpCyrYwYG2dBookxNmturNgp_b0H84d2FN1HQSenXM0FpqJ3JtkouZi7y009HZT5gX7i7rzRsyY2ohzMq5tjfKxlRScR-uyqZVzi5lVGkPJItshRl1DZBAumcAZrEykiEdf7mgKYmClyoFWpsTK2b0LHloUGG3t19UI"/></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-20 pb-28 px-screen-margin bg-surface"><div class="flex flex-col w-full gap-space-lg">
+<!-- 1. KARTU PRESENSI INTERAKTIF HARI INI -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-md p-card-padding flex flex-col gap-space-md">
+<!-- Top Meta Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container/30 text-secondary font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+          Sudah Presensi Masuk
+        </span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+        Kamis, 24 Okt 2024
+      </span>
+</div>
+<!-- Live Clock Display -->
+<div class="flex flex-col items-center justify-center py-space-xs">
+<div class="flex items-baseline gap-1 text-on-surface">
+<span class="font-numeric-stat text-numeric-stat font-extrabold tracking-tight" id="liveClock">14:28:10</span>
+<span class="font-label-md text-label-md text-primary font-bold">WIB</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">verified</span>
+        Shift Normal: 08:30 - 17:30 WIB
+      </p>
+</div>
+<!-- Attendance Metrics Grid -->
+<div class="grid grid-cols-3 gap-space-xs bg-surface-container-low rounded-lg p-space-sm">
+<div class="flex flex-col items-center text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Jam Masuk</span>
+<span class="font-title-sm text-title-sm text-primary font-bold mt-0.5">08:28 <span class="text-[10px] font-normal">WIB</span></span>
+<span class="inline-block mt-1 font-label-sm text-[10px] text-secondary font-medium">Tepat Waktu</span>
+</div>
+<div class="flex flex-col items-center text-center border-l border-outline-variant/30">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Jam Pulang</span>
+<span class="font-title-sm text-title-sm text-on-surface-variant font-bold mt-0.5">--:-- <span class="text-[10px] font-normal">WIB</span></span>
+<span class="inline-block mt-1 font-label-sm text-[10px] text-outline font-medium">Belum Checkout</span>
+</div>
+<div class="flex flex-col items-center text-center border-l border-outline-variant/30">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Durasi Kerja</span>
+<span class="font-title-sm text-title-sm text-on-surface font-bold mt-0.5" id="workDuration">6j 00m</span>
+<span class="inline-block mt-1 font-label-sm text-[10px] text-secondary font-medium">Berjalan</span>
+</div>
+</div>
+<!-- Geotagging & Mini Map Card -->
+<div class="bg-surface-container-high/40 rounded-lg p-space-sm flex flex-col gap-space-xs">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-start gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">location_on</span>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-bold truncate">Gedung Menara Mandiri Lt. 18</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Jl. Jend. Sudirman, Jakarta Selatan</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-bold flex-shrink-0">
+<span class="material-symbols-outlined text-[12px]">radar</span>
+          Radius Valid
+        </span>
+</div>
+<!-- Map Snapshot -->
+<div class="relative w-full h-24 rounded-lg overflow-hidden mt-1 bg-surface-container shadow-inner">
+<div class="w-full h-full bg-cover bg-center" data-location="Menara Mandiri, Jakarta Selatan, Indonesia" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAyGGxxsQamWwMr6dJIKt85_DHthB9MwHTt2Tc3xBWk7v5EGvTxxLy58swZ_TBIw3tSm0qt1fyu-upi40unm4mZyFA2Hl3FBXWOXSuCc1_4iiUVtjmsV-v4XqjTRcBdyVTT6Rnwe08RIhO_oHA-qIfos7pU1-76kKPrxbJSmH9Cq-C6DWK1JQ96ml0eun0I-K6jrHlHPIu6KhNXm7xIBcCvhIHCXITbrGc0XtO0fRgAhK1GZG16LIc')"></div>
+<div class="absolute inset-0 bg-primary/10 flex items-center justify-center pointer-events-none">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-8 h-8 rounded-full bg-primary/20 animate-ping"></span>
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-[14px]">apartment</span>
+</div>
+</div>
+</div>
+<div class="absolute bottom-1.5 left-2 px-2 py-0.5 rounded-md bg-surface-container-lowest/90 backdrop-blur-sm text-on-surface font-label-sm text-[10px] flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[12px]">my_location</span>
+          Akurasi GPS: 8 meter
+        </div>
+</div>
+</div>
+</div>
+<!-- 2. TOMBOL AKSI UTAMA PRESENSI (CHECK OUT) -->
+<div class="w-full">
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-error via-red-500 to-amber-600 p-0.5 shadow-lg">
+<button class="w-full h-16 rounded-[10px] bg-gradient-to-r from-error via-red-500 to-amber-600 text-on-primary flex items-center justify-between px-space-md active:scale-[0.99] transition-transform select-none relative overflow-hidden" id="checkOutBtn" type="button">
+<div class="flex items-center gap-space-sm z-10">
+<div class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[26px]">fingerprint</span>
+</div>
+<div class="flex flex-col text-left">
+<span class="font-title-md text-title-md font-bold tracking-tight">Presensi Pulang Kerja</span>
+<span class="font-label-sm text-label-sm text-white/90">Tekan &amp; tahan untuk check-out biometrik</span>
+</div>
+</div>
+<div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-[20px] text-white">east</span>
+</div>
+<!-- Progress Fill Overlay for Long Press -->
+<div class="absolute left-0 top-0 bottom-0 bg-black/25 w-0 transition-all duration-75" id="holdProgress"></div>
+</button>
+</div>
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant mt-space-xs" id="pressHint">
+      Tahan 1.5 detik untuk verifikasi identitas wajah &amp; sidik jari
+    </p>
+</div>
+<!-- 3. RINGKASAN STATISTIK BULAN OKTOBER 2024 -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-title-md text-title-md text-on-surface font-bold">Ringkasan Presensi</h2>
+<span class="font-label-md text-label-md text-primary font-semibold">Oktober 2024</span>
+</div>
+<div class="grid grid-cols-3 gap-space-xs">
+<!-- Tepat Waktu -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Tepat Waktu</span>
+<div class="w-6 h-6 rounded-full bg-secondary-container/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-secondary font-bold">17</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hari</span>
+</div>
+</div>
+<!-- Terlambat -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Terlambat</span>
+<div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-amber-700 font-bold">1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Kali</span>
+</div>
+</div>
+<!-- Cuti Tahunan -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Cuti</span>
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[14px]">beach_access</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hari</span>
+</div>
+</div>
+<!-- Sakit -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Sakit</span>
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[14px]">medication</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">0</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hari</span>
+</div>
+</div>
+<!-- Dinas Luar -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Dinas</span>
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[14px]">flight_takeoff</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-tertiary font-bold">1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hari</span>
+</div>
+</div>
+<!-- Alpha / Tanpa Keterangan -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between h-24">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">Alpha</span>
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[14px]">cancel</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">0</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hari</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 4. KALENDER KEHADIRAN INTERAKTIF -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">date_range</span>
+<h3 class="font-title-sm text-title-sm text-on-surface font-bold">Kalender Presensi</h3>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">Hadir</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">Late</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">Cuti</span>
+</div>
+</div>
+</div>
+<!-- Mini Horizontal Calendar Strip (Minggu Ini) -->
+<div class="grid grid-cols-7 gap-1.5 pt-1">
+<!-- Sen 21 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/70">
+<span class="font-label-sm text-[10px] text-on-surface-variant">SEN</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">21</span>
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5"></span>
+</div>
+<!-- Sel 22 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/70">
+<span class="font-label-sm text-[10px] text-on-surface-variant">SEL</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">22</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5"></span>
+</div>
+<!-- Rab 23 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/70">
+<span class="font-label-sm text-[10px] text-on-surface-variant">RAB</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">23</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5"></span>
+</div>
+<!-- Kam 24 (Today) -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-primary text-on-primary shadow-sm scale-105">
+<span class="font-label-sm text-[10px] text-primary-fixed">KAM</span>
+<span class="font-title-sm text-title-sm font-bold mt-0.5">24</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container mt-1.5"></span>
+</div>
+<!-- Jum 25 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/70 opacity-60">
+<span class="font-label-sm text-[10px] text-on-surface-variant">JUM</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">25</span>
+<span class="w-1.5 h-1.5 rounded-full bg-transparent mt-1.5"></span>
+</div>
+<!-- Sab 26 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/30 opacity-40">
+<span class="font-label-sm text-[10px] text-error">SAB</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">26</span>
+<span class="w-1.5 h-1.5 rounded-full bg-transparent mt-1.5"></span>
+</div>
+<!-- Min 27 -->
+<div class="flex flex-col items-center py-2 px-1 rounded-lg bg-surface-container-low/30 opacity-40">
+<span class="font-label-sm text-[10px] text-error">MIN</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">27</span>
+<span class="w-1.5 h-1.5 rounded-full bg-transparent mt-1.5"></span>
+</div>
+</div>
+</div>
+<!-- 5. RIWAYAT KEHADIRAN 3 HARI TERAKHIR -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-title-md text-title-md text-on-surface font-bold">Riwayat Presensi</h2>
+<a class="font-label-md text-label-md text-primary font-semibold flex items-center gap-0.5 hover:underline" href="#">
+        Lihat Semua
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+<div class="flex flex-col gap-space-xs">
+<!-- Item 1: Rabu, 23 Okt -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-10 h-10 rounded-full bg-secondary-container/40 flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">done_all</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Rabu, 23 Okt 2024</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary font-label-sm text-[10px] font-bold">Lengkap</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">08:25 - 17:35 WIB • 9j 10m • Kantor Pusat</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+<!-- Item 2: Selasa, 22 Okt -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-10 h-10 rounded-full bg-secondary-container/40 flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">done_all</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Selasa, 22 Okt 2024</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary font-label-sm text-[10px] font-bold">Lengkap</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">08:20 - 17:40 WIB • 9j 20m • Kantor Pusat</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+<!-- Item 3: Senin, 21 Okt (Late) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Senin, 21 Okt 2024</span>
+<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-label-sm text-[10px] font-bold">Telat 12 Menit</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">08:42 - 17:45 WIB • Alasan Macet Lalu Lintas (Diverifikasi)</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- 6. AKSI CEPAT TAMBAHAN -->
+<div class="w-full bg-surface-container-low rounded-xl p-card-padding flex flex-col gap-space-sm">
+<span class="font-label-md text-label-md text-on-surface-variant font-bold uppercase tracking-wider">Aksi &amp; Bantuan Cepat</span>
+<div class="grid grid-cols-3 gap-space-xs">
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-bright shadow-sm active:scale-95 transition-transform" type="button">
+<div class="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">edit_calendar</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold text-center leading-tight">Koreksi Presensi</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-bright shadow-sm active:scale-95 transition-transform" type="button">
+<div class="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">event_busy</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold text-center leading-tight">Pengajuan Izin</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-bright shadow-sm active:scale-95 transition-transform" type="button">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold text-center leading-tight">Rekap Lengkap</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const clockEl = document.getElementById('liveClock');
+    function updateClock() {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const secs = String(now.getSeconds()).padStart(2, '0');
+      if (clockEl) {
+        clockEl.textContent = `${hrs}:${mins}:${secs}`;
+      }
+    }
+    setInterval(updateClock, 1000);
+
+    const checkOutBtn = document.getElementById('checkOutBtn');
+    const holdProgress = document.getElementById('holdProgress');
+    const pressHint = document.getElementById('pressHint');
+    let pressTimer = null;
+    let progressInterval = null;
+    let progress = 0;
+
+    function startPress() {
+      progress = 0;
+      holdProgress.style.width = '0%';
+      pressHint.textContent = 'Menahan tombol... Verifikasi biometrik sedang berlangsung';
+      pressHint.className = 'text-center font-label-sm text-label-sm text-primary font-bold mt-space-xs animate-pulse';
+
+      progressInterval = setInterval(() => {
+        progress += 10;
+        holdProgress.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+          onSuccess();
+        }
+      }, 100);
+    }
+
+    function cancelPress() {
+      if (progressInterval) clearInterval(progressInterval);
+      if (progress < 100) {
+        holdProgress.style.width = '0%';
+        pressHint.textContent = 'Tahan 1.5 detik untuk verifikasi identitas wajah & sidik jari';
+        pressHint.className = 'text-center font-label-sm text-label-sm text-on-surface-variant mt-space-xs';
+      }
+    }
+
+    function onSuccess() {
+      holdProgress.style.width = '100%';
+      pressHint.textContent = '✓ Presensi Pulang Berhasil Dicatat! Sampai Jumpa Besok.';
+      pressHint.className = 'text-center font-label-sm text-label-sm text-secondary font-bold mt-space-xs';
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      setTimeout(() => {
+        holdProgress.style.width = '0%';
+      }, 3000);
+    }
+
+    if (checkOutBtn) {
+      checkOutBtn.addEventListener('mousedown', startPress);
+      checkOutBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
+      
+      checkOutBtn.addEventListener('mouseup', cancelPress);
+      checkOutBtn.addEventListener('mouseleave', cancelPress);
+      checkOutBtn.addEventListener('touchend', cancelPress);
+    }
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(19,27,46,0.06)]" data-active-classes="text-primary [&amp;_span.material-symbols-outlined]:[font-variation-settings:'FILL'_1,'wght'_700] [&amp;_.active-indicator]:w-8 [&amp;_.active-indicator]:bg-primary"><div class="flex justify-around items-center h-nav-height px-space-xs"><a class="relative flex flex-col items-center justify-center w-14 h-full gap-space-2xs text-on-surface-variant hover:text-primary transition-colors group" data-path="beranda" href="#"><div class="active-indicator absolute top-1 w-0 h-1 rounded-full bg-transparent transition-all duration-300"></div><span class="material-symbols-outlined text-[24px]">dashboard</span><span class="font-label-sm text-label-sm font-semibold tracking-tight">Beranda</span></a><a class="relative flex flex-col items-center justify-center w-14 h-full gap-space-2xs text-on-surface-variant hover:text-primary transition-colors group" data-path="kinerja" href="#"><div class="active-indicator absolute top-1 w-0 h-1 rounded-full bg-transparent transition-all duration-300"></div><span class="material-symbols-outlined text-[24px]">monitoring</span><span class="font-label-sm text-label-sm font-semibold tracking-tight">Kinerja</span></a><a aria-current="page" class="relative flex flex-col items-center justify-center w-14 h-full gap-space-2xs transition-colors group text-primary [&amp;_span.material-symbols-outlined]:[font-variation-settings:'FILL'_1,'wght'_700] [&amp;_.active-indicator]:w-8 [&amp;_.active-indicator]:bg-primary" data-path="kehadiran" href="#"><div class="active-indicator absolute top-1 w-0 h-1 rounded-full bg-transparent transition-all duration-300"></div><div class="relative flex items-center justify-center w-9 h-9 rounded-full bg-surface-container-high group-hover:bg-primary-fixed transition-colors"><span class="material-symbols-outlined text-[22px]">fingerprint</span><span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-secondary"></span></div><span class="font-label-sm text-label-sm font-semibold tracking-tight">Kehadiran</span></a><a class="relative flex flex-col items-center justify-center w-14 h-full gap-space-2xs text-on-surface-variant hover:text-primary transition-colors group" data-path="pengajuan" href="#"><div class="active-indicator absolute top-1 w-0 h-1 rounded-full bg-transparent transition-all duration-300"></div><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">assignment_turned_in</span><span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-secondary-container ring-1 ring-surface"></span></div><span class="font-label-sm text-label-sm font-semibold tracking-tight">Pengajuan</span></a><a class="relative flex flex-col items-center justify-center w-14 h-full gap-space-2xs text-on-surface-variant hover:text-primary transition-colors group" data-path="profil" href="#"><div class="active-indicator absolute top-1 w-0 h-1 rounded-full bg-transparent transition-all duration-300"></div><span class="material-symbols-outlined text-[24px]">person</span><span class="font-label-sm text-label-sm font-semibold tracking-tight">Profil</span></a></div></nav></body></html>
