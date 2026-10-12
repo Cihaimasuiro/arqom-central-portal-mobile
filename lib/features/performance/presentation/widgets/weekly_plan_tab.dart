@@ -585,8 +585,8 @@ class _WeeklyPlanTabState extends State<WeeklyPlanTab> {
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => _openUpdateItemModal(item),
-                  icon: const Icon(Icons.speed, size: 13),
-                  label: const Text('Update Progres', style: TextStyle(fontSize: 11)),
+                  icon: const Icon(Icons.edit_outlined, size: 13),
+                  label: const Text('Edit Rincian', style: TextStyle(fontSize: 11)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary, width: 1),

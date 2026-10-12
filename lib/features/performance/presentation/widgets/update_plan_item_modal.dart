@@ -18,46 +18,91 @@ class UpdatePlanItemModal extends StatefulWidget {
 }
 
 class _UpdatePlanItemModalState extends State<UpdatePlanItemModal> {
-  late String _status;
-  late double _progress;
-  final TextEditingController _detailsController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _titleController;
+  late TextEditingController _expectedOutputController;
+  late TextEditingController _targetDateController;
+  late TextEditingController _detailsController;
+
+  late String _priority;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _status = widget.item.executionStatus;
-    _progress = widget.item.progressPercent.toDouble().clamp(0.0, 100.0);
-    _detailsController.text = widget.item.details ?? '';
+    _titleController = TextEditingController(text: widget.item.title);
+    _expectedOutputController = TextEditingController(text: widget.item.expectedOutput ?? '');
+    _targetDateController = TextEditingController(text: widget.item.targetDate ?? '');
+    _detailsController = TextEditingController(text: widget.item.details ?? '');
+    _priority = widget.item.priority;
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
+    _expectedOutputController.dispose();
+    _targetDateController.dispose();
     _detailsController.dispose();
     super.dispose();
   }
 
-  void _onStatusChanged(String? newStatus) {
-    if (newStatus == null) return;
-    setState(() {
-      _status = newStatus;
-      if (newStatus == 'completed') {
-        _progress = 100.0;
-      } else if (newStatus == 'not_started' && _progress == 100.0) {
-        _progress = 0.0;
-      }
-    });
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    DateTime initial = now;
+    if (_targetDateController.text.isNotEmpty) {
+      final parsed = DateTime.tryParse(_targetDateController.text);
+      if (parsed != null) initial = parsed;
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.onSurface,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formatted =
+          "${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      setState(() {
+        _targetDateController.text = formatted;
+      });
+    }
   }
 
   Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
     try {
       final body = <String, dynamic>{
-        'execution_status': _status,
-        'progress_percent': _progress.round(),
-        'details': _detailsController.text.trim(),
+        'title': _titleController.text.trim(),
+        'expected_output': _expectedOutputController.text.trim(),
+        'priority': _priority,
       };
+
+      if (_targetDateController.text.trim().isNotEmpty) {
+        body['target_date'] = _targetDateController.text.trim();
+      }
+
+      if (_detailsController.text.trim().isNotEmpty) {
+        body['details'] = _detailsController.text.trim();
+      }
 
       final res = await PerformanceService.updateWeeklyPlanItem(widget.item.id, body);
 
@@ -90,7 +135,7 @@ class _UpdatePlanItemModalState extends State<UpdatePlanItemModal> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -102,171 +147,227 @@ class _UpdatePlanItemModalState extends State<UpdatePlanItemModal> {
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Update Progres & Rincian',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
-                  onPressed: () => Navigator.pop(context),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const Divider(height: 20),
-
-            // Item Title Display
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (widget.item.monthlyTargetTitle != null) ...[
-                    Text(
-                      'Target Bulanan: ${widget.item.monthlyTargetTitle}',
-                      style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Edit Rincian Rencana',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Pembaruan judul, output, prioritas & tanggal target',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant, fontSize: 10),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    widget.item.title,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                  if (widget.item.expectedOutput != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Output: ${widget.item.expectedOutput}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
-                    ),
-                  ],
+                  IconButton(
+                    icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
+                    onPressed: () => Navigator.pop(context),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const Divider(height: 20),
 
-            // Status Dropdown
-            Text(
-              'Status Eksekusi',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<String>(
-              value: _status,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'not_started', child: Text('Belum Mulai (Not Started)')),
-                DropdownMenuItem(value: 'in_progress', child: Text('Sedang Berjalan (In Progress)')),
-                DropdownMenuItem(value: 'completed', child: Text('Selesai (Completed)')),
-              ],
-              onChanged: _onStatusChanged,
-            ),
-            const SizedBox(height: 16),
-
-            // Progress Slider
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Persentase Progres',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
+              // Monthly Target Badge if connected
+              if (widget.item.monthlyTargetTitle != null) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
-                  child: Text(
-                    '${_progress.round()}%',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 13,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Target Bulanan: ${widget.item.monthlyTargetTitle}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 4),
-            Slider(
-              value: _progress,
-              min: 0,
-              max: 100,
-              divisions: 20,
-              activeColor: AppColors.primary,
-              onChanged: _status == 'completed'
-                  ? null
-                  : (val) {
-                      setState(() {
-                        _progress = val;
-                      });
-                    },
-            ),
-            if (_status == 'completed')
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  'Status selesai otomatis mengatur progres menjadi 100%.',
-                  style: TextStyle(fontSize: 10, color: Colors.green, fontStyle: FontStyle.italic),
+
+              // Info Banner: Progres diupdate di Weekly Review
+              Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, size: 15, color: AppColors.outline),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Progres pengerjaan dan status evaluasi dilakukan terpusat pada Menu 3: Weekly Review setiap akhir pekan (Jumat).',
+                        style: TextStyle(fontSize: 10.5, color: AppColors.outline, height: 1.3),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 12),
 
-            // Details
-            Text(
-              'Rincian / Catatan Pengerjaan (Details)',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _detailsController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Misal: Menyelesaikan implementasi handling offline mode...',
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              // Title Field
+              Text(
+                'Judul Rencana',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  hintText: 'Misal: Slicing UI Weekly Review & Integrasi API Mobile',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Judul rencana tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
 
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+              // Expected Output
+              Text(
+                'Target Output (Expected Output)',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Simpan Pembaruan',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _expectedOutputController,
+                decoration: InputDecoration(
+                  hintText: 'Misal: Layar Weekly Review selesai & terintegrasi',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Priority & Target Date
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Prioritas',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          value: _priority,
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'low', child: Text('Rendah (Low)')),
+                            DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                            DropdownMenuItem(value: 'high', child: Text('Tinggi (High)')),
+                            DropdownMenuItem(value: 'urgent', child: Text('Mendesak')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _priority = val);
+                          },
+                        ),
+                      ],
                     ),
-            ),
-          ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Target Tanggal',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _targetDateController,
+                          readOnly: true,
+                          onTap: _pickDate,
+                          decoration: InputDecoration(
+                            hintText: 'YYYY-MM-DD',
+                            suffixIcon: const Icon(Icons.event, size: 18),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Details
+              Text(
+                'Keterangan / Rincian Tambahan',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _detailsController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Misal: Menyelesaikan implementasi handling offline...',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Simpan Rincian Rencana',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

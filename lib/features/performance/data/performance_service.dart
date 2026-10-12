@@ -324,7 +324,7 @@ class PerformanceService {
     }
   }
 
-  /// 4.6 Update Rincian / Progres Item Rencana
+  /// 4.6 Update Rincian Rencana Mingguan
   /// PATCH /api/performance/weekly-plan/items/{id}
   static Future<PerformanceApiResponse<Map<String, dynamic>>> updateWeeklyPlanItem(
     int itemId,
