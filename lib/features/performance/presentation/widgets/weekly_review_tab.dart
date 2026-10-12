@@ -29,6 +29,12 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
   final Map<int, TextEditingController> _obstacleControllers = {};
   final Map<int, TextEditingController> _improvementControllers = {};
 
+  // Baseline snapshot from API to detect any user changes
+  final Map<int, String> _initialStatus = {};
+  final Map<int, int> _initialProgress = {};
+  final Map<int, String> _initialObstacle = {};
+  final Map<int, String> _initialImprovement = {};
+
   @override
   void initState() {
     super.initState();
@@ -86,16 +92,28 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
     _improvementControllers.clear();
     _itemStatus.clear();
     _itemProgress.clear();
+    _initialStatus.clear();
+    _initialProgress.clear();
+    _initialObstacle.clear();
+    _initialImprovement.clear();
 
     for (final plan in data.plans) {
       for (final item in plan.items) {
-        _itemStatus[item.id] = item.executionStatus;
-        _itemProgress[item.id] = item.progressPercent.toDouble().clamp(0.0, 100.0);
+        final st = item.executionStatus;
+        final prog = item.progressPercent.toDouble().clamp(0.0, 100.0);
+        final obs = item.obstacle ?? '';
+        final imp = item.improvementPlan ?? '';
 
-        _obstacleControllers[item.id] =
-            TextEditingController(text: item.obstacle ?? '');
-        _improvementControllers[item.id] =
-            TextEditingController(text: item.improvementPlan ?? '');
+        _itemStatus[item.id] = st;
+        _itemProgress[item.id] = prog;
+        _obstacleControllers[item.id] = TextEditingController(text: obs);
+        _improvementControllers[item.id] = TextEditingController(text: imp);
+
+        // Record initial baseline
+        _initialStatus[item.id] = st;
+        _initialProgress[item.id] = prog.round();
+        _initialObstacle[item.id] = obs.trim();
+        _initialImprovement[item.id] = imp.trim();
       }
     }
   }
@@ -150,6 +168,43 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
         }
       }
     });
+  }
+
+  bool get _hasAnyChanges {
+    if (_reviewData == null || _initialStatus.isEmpty) return false;
+
+    for (final plan in _reviewData!.plans) {
+      for (final item in plan.items) {
+        final id = item.id;
+        final currentStatus = _itemStatus[id] ?? _initialStatus[id] ?? item.executionStatus;
+        final initStatus = _initialStatus[id] ?? item.executionStatus;
+
+        // 1. Status changed
+        if (currentStatus != initStatus) return true;
+
+        // 2. Progress changed (relevant when in_progress)
+        if (currentStatus == 'in_progress') {
+          final initProg = _initialProgress[id] ?? item.progressPercent.round();
+          final currProg = (_itemProgress[id] ?? 0.0).round();
+          if (currProg != initProg) return true;
+        }
+
+        // 3. Obstacle changed (relevant when not completed)
+        if (currentStatus != 'completed') {
+          final initObs = _initialObstacle[id] ?? '';
+          final currObs = (_obstacleControllers[id]?.text ?? '').trim();
+          if (currObs != initObs) return true;
+        }
+
+        // 4. Improvement plan changed (relevant when completed)
+        if (currentStatus == 'completed') {
+          final initImp = _initialImprovement[id] ?? '';
+          final currImp = (_improvementControllers[id]?.text ?? '').trim();
+          if (currImp != initImp) return true;
+        }
+      }
+    }
+    return false;
   }
 
   Future<void> _submitBatchReview() async {
@@ -209,6 +264,17 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
       if (!mounted) return;
 
       if (res.success) {
+        for (final item in allItems) {
+          final id = item.id;
+          final currentStatus = _itemStatus[id] ?? item.executionStatus;
+          final isCompleted = currentStatus == 'completed';
+          final isNotStarted = currentStatus == 'not_started';
+          final progress = isCompleted ? 100 : (isNotStarted ? 0 : (_itemProgress[id]?.round() ?? 0));
+          _initialStatus[id] = currentStatus;
+          _initialProgress[id] = progress;
+          _initialObstacle[id] = (_obstacleControllers[id]?.text ?? '').trim();
+          _initialImprovement[id] = (_improvementControllers[id]?.text ?? '').trim();
+        }
         widget.onDataChanged();
         _fetchData(silent: true);
         showDialog(
@@ -451,31 +517,47 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
           ...allItems.map((item) => _buildReviewItemCard(item)),
           const SizedBox(height: 16),
 
-          // Submit Batch Button
-          ElevatedButton.icon(
-            onPressed: _isSubmitting ? null : _submitBatchReview,
-            icon: _isSubmitting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          // Submit Batch Button (Only visible when user makes changes)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SizeTransition(sizeFactor: animation, child: child),
+            ),
+            child: _hasAnyChanges
+                ? Padding(
+                    key: const ValueKey('submit_btn_visible'),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: ElevatedButton.icon(
+                      onPressed: _isSubmitting ? null : _submitBatchReview,
+                      icon: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(
+                        _isSubmitting
+                            ? 'Menyimpan & Menghitung Ulang...'
+                            : 'Simpan Sekaligus (${allItems.length} Item Evaluasi)',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 2,
+                      ),
+                    ),
                   )
-                : const Icon(Icons.send_rounded, size: 18),
-            label: Text(
-              _isSubmitting
-                  ? 'Menyimpan & Menghitung Ulang...'
-                  : 'Simpan Sekaligus (${allItems.length} Item Evaluasi)',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 2,
-            ),
+                : const SizedBox(
+                    key: ValueKey('submit_btn_hidden'),
+                    height: 12,
+                  ),
           ),
-          const SizedBox(height: 20),
         ],
       ],
     );
@@ -811,6 +893,7 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
                 TextFormField(
                   controller: improvementController,
                   maxLines: 2,
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Misal: Mulai integrasi lebih awal di awal pekan agar testing lebih maksimal...',
                     hintStyle: const TextStyle(fontSize: 11),
@@ -833,6 +916,7 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
                 TextFormField(
                   controller: obstacleController,
                   maxLines: 2,
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Misal: Menunggu konfirmasi aset dari tim desain atau akses kredensial gateway...',
                     hintStyle: const TextStyle(fontSize: 11),
