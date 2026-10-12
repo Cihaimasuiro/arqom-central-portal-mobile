@@ -1,0 +1,315 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import '../../auth/data/auth_service.dart';
+import 'models/request_models.dart';
+
+class RequestApiResponse<T> {
+  final bool success;
+  final String message;
+  final T? data;
+
+  RequestApiResponse({
+    required this.success,
+    required this.message,
+    this.data,
+  });
+}
+
+class RequestsService {
+  static Future<Map<String, String>> _getHeaders({bool isMultipart = false}) async {
+    final token = await AuthService.getToken();
+    final headers = {
+      'Accept': 'application/json',
+    };
+    if (!isMultipart) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
+  static String _extractErrorMessage(http.Response response) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        if (decoded['errors'] != null && decoded['errors'] is Map) {
+          final errMap = decoded['errors'] as Map<String, dynamic>;
+          final firstKey = errMap.keys.firstOrNull;
+          if (firstKey != null) {
+            final val = errMap[firstKey];
+            if (val is List && val.isNotEmpty) return val.first.toString();
+            return val.toString();
+          }
+        }
+        if (decoded['message'] != null) {
+          return decoded['message'].toString();
+        }
+      }
+    } catch (_) {}
+
+    switch (response.statusCode) {
+      case 401:
+        return 'Sesi login telah berakhir. Silakan login kembali.';
+      case 403:
+        return 'Anda tidak memiliki hak akses untuk aksi ini.';
+      case 404:
+        return 'Data pengajuan tidak ditemukan.';
+      case 422:
+        return 'Validasi formulir gagal. Mohon periksa kembali isian Anda.';
+      case 500:
+        return 'Terjadi gangguan pada server internal (500).';
+      default:
+        return 'Gagal memproses permohonan (${response.statusCode}).';
+    }
+  }
+
+  /// 5.2 Ambil Riwayat Pengajuan Sendiri
+  /// GET /api/requests?status=...&request_type=...
+  static Future<RequestApiResponse<List<RequestItem>>> getRequests({
+    String? status,
+    String? requestType,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (status != null && status.isNotEmpty && status.toLowerCase() != 'semua') {
+        queryParams['status'] = status;
+      }
+      if (requestType != null && requestType.isNotEmpty && requestType.toLowerCase() != 'semua') {
+        queryParams['request_type'] = requestType;
+      }
+
+      final uri = Uri.parse('${AuthService.baseUrl}/requests').replace(
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        final rawList = decoded['data'] as List<dynamic>? ?? [];
+        final items = rawList
+            .map((e) => RequestItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Berhasil memuat pengajuan',
+          data: items,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.3 Buat Pengajuan Baru
+  /// POST /api/requests (multipart/form-data)
+  static Future<RequestApiResponse<Map<String, dynamic>>> createRequest({
+    required String requestType,
+    required String description,
+    required String startDate,
+    String? endDate,
+    String? startTime,
+    String? endTime,
+    String? location,
+    File? attachment,
+  }) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests');
+      final token = await AuthService.getToken();
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Accept'] = 'application/json';
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields['request_type'] = requestType;
+      request.fields['description'] = description;
+      request.fields['start_date'] = startDate;
+
+      if (endDate != null && endDate.isNotEmpty) {
+        request.fields['end_date'] = endDate;
+      }
+      if (startTime != null && startTime.isNotEmpty) {
+        request.fields['start_time'] = startTime;
+      }
+      if (endTime != null && endTime.isNotEmpty) {
+        request.fields['end_time'] = endTime;
+      }
+      if (location != null && location.isNotEmpty) {
+        request.fields['location'] = location;
+      }
+
+      if (attachment != null && await attachment.exists()) {
+        final multipartFile = await http.MultipartFile.fromPath(
+          'attachment',
+          attachment.path,
+        );
+        request.files.add(multipartFile);
+      }
+
+      final streamedResponse = await request.send();
+      final res = await http.Response.fromStream(streamedResponse);
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final decoded = jsonDecode(res.body);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Pengajuan berhasil dikirim.',
+          data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Gagal mengirim pengajuan: $e',
+      );
+    }
+  }
+
+  /// 5.4 Batalkan Pengajuan
+  /// DELETE /api/requests/{id}
+  static Future<RequestApiResponse<void>> cancelRequest(int id) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/$id');
+      final headers = await _getHeaders();
+      final res = await http.delete(uri, headers: headers);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibatalkan.',
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.5 Daftar Pengajuan yang Perlu Disetujui (Inbox Approval Atasan)
+  /// GET /api/requests/approvals
+  static Future<RequestApiResponse<List<RequestItem>>> getApprovals() async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/approvals');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        final rawList = decoded['data'] as List<dynamic>? ?? [];
+        final items = rawList
+            .map((e) => RequestItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Berhasil memuat persetujuan.',
+          data: items,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.6 Setujui Pengajuan (Approve by Manager)
+  /// POST /api/requests/{id}/approve
+  static Future<RequestApiResponse<void>> approveRequest(
+    int id, {
+    String? note,
+  }) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/$id/approve');
+      final headers = await _getHeaders();
+      final body = jsonEncode({
+        if (note != null && note.isNotEmpty) 'note': note,
+      });
+
+      final res = await http.post(uri, headers: headers, body: body);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Persetujuan berhasil diproses: Disetujui.',
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.7 Tolak Pengajuan (Reject by Manager)
+  /// POST /api/requests/{id}/reject
+  static Future<RequestApiResponse<void>> rejectRequest(
+    int id, {
+    required String note,
+  }) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/$id/reject');
+      final headers = await _getHeaders();
+      final body = jsonEncode({'note': note});
+
+      final res = await http.post(uri, headers: headers, body: body);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Persetujuan berhasil diproses: Ditolak.',
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+}

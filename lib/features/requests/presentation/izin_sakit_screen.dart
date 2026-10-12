@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/requests_service.dart';
 
 class IzinSakitScreen extends StatefulWidget {
   const IzinSakitScreen({super.key});
@@ -13,16 +15,74 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
-  
-  String? _selectedType = 'Sakit';
+  final _descriptionController = TextEditingController();
+
+  String? _selectedCategory = 'Sakit';
+  File? _attachmentFile;
   String? _selectedFileName;
+  bool _isLoading = false;
+
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   final List<String> _izinTypes = ['Sakit', 'Izin Keperluan Keluarga', 'Izin Lainnya'];
 
   @override
   void dispose() {
     _startDateController.dispose();
     _endDateController.dispose();
+    _descriptionController.dispose();
     super.dispose();
+  }
+
+  String _formatDateYmd(DateTime dt) {
+    return "${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
+  }
+
+  Future<void> _submitRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih tanggal mulai')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final reqType = (_selectedCategory == 'Sakit') ? 'sakit' : 'izin';
+    String desc = _descriptionController.text.trim();
+    if (_selectedCategory != 'Sakit') {
+      desc = '[$_selectedCategory] $desc';
+    }
+
+    final res = await RequestsService.createRequest(
+      requestType: reqType,
+      description: desc,
+      startDate: _formatDateYmd(_startDate!),
+      endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+      attachment: _attachmentFile,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (res.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
@@ -30,7 +90,10 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
-        title: Text('Pengajuan Sakit/Izin', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Pengajuan Sakit/Izin',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColors.surfaceContainerLowest,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -42,88 +105,107 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildDropdown('Jenis Pengajuan', _selectedType, _izinTypes, (val) {
+              _buildDropdown('Jenis Pengajuan', _selectedCategory, _izinTypes, (val) {
                 setState(() {
-                  _selectedType = val;
+                  _selectedCategory = val;
                 });
               }),
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Expanded(child: _buildDatePicker('Tanggal Mulai', 'Pilih tanggal', _startDateController)),
+                  Expanded(
+                    child: _buildDatePicker(
+                      'Tanggal Mulai',
+                      'Pilih tanggal',
+                      _startDateController,
+                      onPicked: (dt) {
+                        _startDate = dt;
+                        if (_endDate != null && _endDate!.isBefore(dt)) {
+                          _endDate = dt;
+                          _endDateController.text = _formatDateYmd(dt);
+                        }
+                      },
+                    ),
+                  ),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildDatePicker('Tanggal Selesai', 'Pilih tanggal', _endDateController)),
+                  Expanded(
+                    child: _buildDatePicker(
+                      'Tanggal Selesai',
+                      'Pilih tanggal',
+                      _endDateController,
+                      firstDate: _startDate,
+                      onPicked: (dt) => _endDate = dt,
+                      required: false,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
-              _buildInputField('Keterangan / Alasan', 'Jelaskan alasan secara singkat', maxLines: 3),
+              _buildInputField(
+                'Keterangan / Alasan',
+                'Jelaskan alasan secara singkat',
+                _descriptionController,
+                maxLines: 3,
+              ),
               const SizedBox(height: 20),
-              if (_selectedType == 'Sakit') ...[
-                Text('Lampiran Surat Dokter', style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: () async {
-                    FilePickerResult? result = await FilePicker.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['jpg', 'pdf', 'png'],
-                    );
-                    
-                    if (result != null) {
-                      setState(() {
-                        _selectedFileName = result.files.single.name;
-                      });
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: _selectedFileName != null ? AppColors.primary.withOpacity(0.05) : AppColors.surface,
-                      border: Border.all(
-                        color: _selectedFileName != null ? AppColors.primary : AppColors.outlineVariant.withOpacity(0.5), 
-                        style: BorderStyle.solid
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          _selectedFileName != null ? Icons.check_circle : Icons.upload_file, 
-                          color: AppColors.primary, 
-                          size: 32
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _selectedFileName ?? 'Ketuk untuk mengunggah surat', 
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppColors.primary, 
-                            fontWeight: FontWeight.bold
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (_selectedFileName == null) ...[
-                          const SizedBox(height: 4),
-                          Text('Format PDF, JPG, atau PNG (Max 5MB)', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                        ] else ...[
-                          const SizedBox(height: 4),
-                          Text('Ketuk untuk mengganti file', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                        ]
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pengajuan berhasil dikirim!')),
-                    );
-                    Navigator.pop(context);
+              Text(
+                _selectedCategory == 'Sakit' ? 'Lampiran Surat Dokter (Opsional)' : 'Lampiran Pendukung (Opsional)',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () async {
+                  FilePickerResult? result = await FilePicker.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['jpg', 'pdf', 'png'],
+                  );
+
+                  if (result != null && result.files.single.path != null) {
+                    setState(() {
+                      _selectedFileName = result.files.single.name;
+                      _attachmentFile = File(result.files.single.path!);
+                    });
                   }
                 },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _selectedFileName != null ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
+                    border: Border.all(
+                      color: _selectedFileName != null ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        _selectedFileName != null ? Icons.check_circle : Icons.upload_file,
+                        color: AppColors.primary,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _selectedFileName ?? 'Ketuk untuk mengunggah surat/lampiran (Maks 2MB)',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Format didukung: PDF, JPG, PNG',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -131,7 +213,13 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
-                child: const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -148,13 +236,14 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
+          isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
           ),
           items: items.map((item) => DropdownMenuItem(value: item, child: Text(item, style: Theme.of(context).textTheme.bodyMedium))).toList(),
@@ -164,64 +253,91 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
     );
   }
 
-  Widget _buildInputField(String label, String hint, {int maxLines = 1}) {
+  Widget _buildInputField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    int maxLines = 1,
+    bool required = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Row(
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+            if (required)
+              Text(' *', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+          ],
+        ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
           ),
-          validator: (value) => value == null || value.isEmpty ? 'Wajib diisi' : null,
+          validator: required ? (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null : null,
         ),
       ],
     );
   }
 
-  Widget _buildDatePicker(String label, String hint, TextEditingController controller) {
+  Widget _buildDatePicker(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    DateTime? firstDate,
+    required Function(DateTime) onPicked,
+    bool required = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Row(
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+            if (required)
+              Text(' *', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+          ],
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           readOnly: true,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
             suffixIcon: const Icon(Icons.calendar_month, color: AppColors.primary),
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
           ),
           onTap: () async {
             final pickedDate = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
+              initialDate: firstDate ?? DateTime.now(),
+              firstDate: firstDate ?? DateTime.now().subtract(const Duration(days: 30)),
               lastDate: DateTime.now().add(const Duration(days: 365)),
             );
             if (pickedDate != null) {
               setState(() {
-                controller.text = "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                controller.text = _formatDateYmd(pickedDate);
+                onPicked(pickedDate);
               });
             }
           },
-          validator: (value) => value == null || value.isEmpty ? 'Wajib diisi' : null,
+          validator: required ? (value) => value == null || value.isEmpty ? 'Wajib diisi' : null : null,
         ),
       ],
     );

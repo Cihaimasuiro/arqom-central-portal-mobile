@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/requests_service.dart';
 
 class KerjaLemburScreen extends StatefulWidget {
   const KerjaLemburScreen({super.key});
@@ -13,37 +14,37 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
   final _dateController = TextEditingController();
   final _startTimeController = TextEditingController();
   final _endTimeController = TextEditingController();
+  final _targetController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  DateTime? _selectedDate;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _dateController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
+    _targetController.dispose();
+    _noteController.dispose();
     super.dispose();
+  }
+
+  String _formatDateYmd(DateTime dt) {
+    return "${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 14)),
       lastDate: DateTime.now().add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
-        _dateController.text = "${picked.day}/${picked.month}/${picked.year}";
+        _selectedDate = picked;
+        _dateController.text = _formatDateYmd(picked);
       });
     }
   }
@@ -52,18 +53,6 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -71,6 +60,51 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
         final minutes = picked.minute.toString().padLeft(2, '0');
         controller.text = "$hours:$minutes";
       });
+    }
+  }
+
+  Future<void> _submitRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih tanggal lembur')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    String desc = _targetController.text.trim();
+    if (_noteController.text.trim().isNotEmpty) {
+      desc += ' (Catatan: ${_noteController.text.trim()})';
+    }
+
+    final res = await RequestsService.createRequest(
+      requestType: 'lembur',
+      description: desc,
+      startDate: _formatDateYmd(_selectedDate!),
+      startTime: _startTimeController.text.trim(),
+      endTime: _endTimeController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (res.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -102,17 +136,28 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        Expanded(child: _buildTimePicker('Mulai', 'Pilih jam', _startTimeController)),
+                        Expanded(child: _buildTimePicker('Jam Mulai', 'Contoh: 17:30', _startTimeController)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildTimePicker('Selesai', 'Pilih jam', _endTimeController)),
+                        Expanded(child: _buildTimePicker('Jam Selesai', 'Contoh: 21:00', _endTimeController)),
                       ],
                     ),
                     const SizedBox(height: 24),
                     _buildSectionTitle('Detail Pekerjaan'),
                     const SizedBox(height: 16),
-                    _buildInputField('Target / Pekerjaan', 'Tuliskan target yang akan diselesaikan', maxLines: 2),
+                    _buildInputField(
+                      'Target / Pekerjaan',
+                      'Tuliskan target yang akan diselesaikan saat lembur',
+                      _targetController,
+                      maxLines: 2,
+                    ),
                     const SizedBox(height: 20),
-                    _buildInputField('Keterangan Tambahan', 'Catatan opsional', maxLines: 3, isRequired: false),
+                    _buildInputField(
+                      'Keterangan Tambahan',
+                      'Catatan opsional',
+                      _noteController,
+                      maxLines: 3,
+                      isRequired: false,
+                    ),
                   ],
                 ),
               ),
@@ -126,21 +171,14 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
           ],
         ),
         child: ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Pengajuan lembur berhasil dikirim!')),
-              );
-              Navigator.pop(context);
-            }
-          },
+          onPressed: _isLoading ? null : _submitRequest,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -148,7 +186,13 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 0,
           ),
-          child: const Text('Kirim Pengajuan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          child: _isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+              : const Text('Kirim Pengajuan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -176,10 +220,10 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
           onTap: () => _selectDate(context),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
             suffixIcon: const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             filled: true,
@@ -203,10 +247,10 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
           onTap: () => _selectTime(context, controller),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
             suffixIcon: const Icon(Icons.access_time, color: AppColors.primary, size: 20),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             filled: true,
@@ -218,7 +262,13 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
     );
   }
 
-  Widget _buildInputField(String label, String hint, {int maxLines = 1, bool isRequired = true}) {
+  Widget _buildInputField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    int maxLines = 1,
+    bool isRequired = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -230,18 +280,19 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             filled: true,
             fillColor: AppColors.surface,
           ),
-          validator: isRequired ? (value) => value == null || value.isEmpty ? 'Wajib diisi' : null : null,
+          validator: isRequired ? (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null : null,
         ),
       ],
     );
