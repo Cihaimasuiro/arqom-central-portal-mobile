@@ -270,62 +270,47 @@ class _UpdatePlanItemModalState extends State<UpdatePlanItemModal> {
               ),
               const SizedBox(height: 14),
 
-              // Priority & Target Date
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Prioritas',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          value: _priority,
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'low', child: Text('Rendah (Low)')),
-                            DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                            DropdownMenuItem(value: 'high', child: Text('Tinggi (High)')),
-                            DropdownMenuItem(value: 'urgent', child: Text('Mendesak')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) setState(() => _priority = val);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Target Tanggal',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _targetDateController,
-                          readOnly: true,
-                          onTap: _pickDate,
-                          decoration: InputDecoration(
-                            hintText: 'YYYY-MM-DD',
-                            suffixIcon: const Icon(Icons.event, size: 18),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              // Prioritas
+              Text(
+                'Prioritas',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: _priority,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'low', child: Text('Rendah (Low)')),
+                  DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                  DropdownMenuItem(value: 'high', child: Text('Tinggi (High)')),
+                  DropdownMenuItem(value: 'urgent', child: Text('Mendesak')),
                 ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _priority = val);
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Target Tanggal
+              Text(
+                'Target Tanggal',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _targetDateController,
+                readOnly: true,
+                onTap: _pickDate,
+                decoration: InputDecoration(
+                  hintText: 'YYYY-MM-DD',
+                  suffixIcon: const Icon(Icons.event, size: 18),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
               const SizedBox(height: 14),
 

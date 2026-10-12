@@ -262,18 +262,23 @@ class _TargetFormModalState extends State<TargetFormModal> {
             children: [
               // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _isEdit ? 'Ubah Target' : 'Tambah Target Baru',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Expanded(
+                    child: Text(
+                      _isEdit ? 'Ubah Target' : 'Tambah Target Baru',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
                     onPressed: () => Navigator.pop(context),
                     visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
                   ),
                 ],
               ),
@@ -400,6 +405,7 @@ class _TargetFormModalState extends State<TargetFormModal> {
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: _priority,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -431,6 +437,7 @@ class _TargetFormModalState extends State<TargetFormModal> {
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: _status,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

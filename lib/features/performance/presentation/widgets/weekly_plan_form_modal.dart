@@ -122,7 +122,7 @@ class _WeeklyPlanFormModalState extends State<WeeklyPlanFormModal> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -141,19 +141,25 @@ class _WeeklyPlanFormModalState extends State<WeeklyPlanFormModal> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Tambah Rencana Mandiri',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Expanded(
+                    child: Text(
+                      'Tambah Rencana Mandiri',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
                     onPressed: () => Navigator.pop(context),
                     visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
                   ),
                 ],
               ),
@@ -204,67 +210,53 @@ class _WeeklyPlanFormModalState extends State<WeeklyPlanFormModal> {
               ),
               const SizedBox(height: 16),
 
-              // Priority & Target Date
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Prioritas',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          value: _priority,
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'low', child: Text('Rendah')),
-                            DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                            DropdownMenuItem(value: 'high', child: Text('Tinggi')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) setState(() => _priority = val);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Target Tanggal',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _targetDateController,
-                          readOnly: true,
-                          onTap: _pickDate,
-                          decoration: InputDecoration(
-                            hintText: 'YYYY-MM-DD',
-                            suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Wajib diisi';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+              // Prioritas (Full width to avoid horizontal overflow on narrow devices)
+              Text(
+                'Prioritas',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: _priority,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'low', child: Text('Rendah (Low)')),
+                  DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                  DropdownMenuItem(value: 'high', child: Text('Tinggi (High)')),
+                  DropdownMenuItem(value: 'urgent', child: Text('Mendesak')),
                 ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _priority = val);
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Target Tanggal (Full width)
+              Text(
+                'Target Tanggal',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _targetDateController,
+                readOnly: true,
+                onTap: _pickDate,
+                decoration: InputDecoration(
+                  hintText: 'YYYY-MM-DD',
+                  suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Wajib diisi';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
 
