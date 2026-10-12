@@ -141,8 +141,13 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
       _itemStatus[itemId] = newStatus;
       if (newStatus == 'completed') {
         _itemProgress[itemId] = 100.0;
-      } else if (_itemProgress[itemId] == 100.0) {
-        _itemProgress[itemId] = 50.0;
+      } else if (newStatus == 'not_started') {
+        _itemProgress[itemId] = 0.0;
+      } else if (newStatus == 'in_progress') {
+        final current = _itemProgress[itemId] ?? 0.0;
+        if (current <= 0.0 || current >= 100.0) {
+          _itemProgress[itemId] = 50.0;
+        }
       }
     });
   }
@@ -172,7 +177,8 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
       for (final item in allItems) {
         final status = _itemStatus[item.id] ?? item.executionStatus;
         final isCompleted = status == 'completed';
-        final progress = isCompleted ? 100 : (_itemProgress[item.id]?.round() ?? 0);
+        final isNotStarted = status == 'not_started';
+        final progress = isCompleted ? 100 : (isNotStarted ? 0 : (_itemProgress[item.id]?.round() ?? 0));
 
         final improvement = isCompleted
             ? (_improvementControllers[item.id]?.text.trim().isNotEmpty == true
@@ -620,7 +626,8 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
   Widget _buildReviewItemCard(WeeklyReviewItem item) {
     final status = _itemStatus[item.id] ?? item.executionStatus;
     final isCompleted = status == 'completed';
-    final isInProgress = status == 'in_progress';
+    final isNotStarted = status == 'not_started';
+    final isInProgress = !isCompleted && !isNotStarted;
     final priorityColor = _getPriorityColor(item.priority);
     final progress = _itemProgress[item.id] ?? 0.0;
 
@@ -717,12 +724,12 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
             ),
             const SizedBox(height: 12),
 
-            // Progress Slider (Only if not completed)
-            if (!isCompleted) ...[
+            // Progress Slider
+            if (isInProgress) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Capaian Progres:',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
                   ),
@@ -733,16 +740,58 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
                 ],
               ),
               Slider(
-                value: progress.clamp(0.0, 99.0),
-                min: 0,
+                value: progress.clamp(1.0, 99.0),
+                min: 1,
                 max: 99,
-                divisions: 20,
+                divisions: 98,
                 activeColor: AppColors.primary,
                 onChanged: (val) {
                   setState(() {
                     _itemProgress[item.id] = val;
                   });
                 },
+              ),
+            ] else if (isNotStarted) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Capaian Progres:',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_outline, size: 11, color: AppColors.outline),
+                        SizedBox(width: 4),
+                        Text(
+                          '0% (Belum Dimulai)',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  disabledThumbColor: AppColors.outlineVariant,
+                  disabledActiveTrackColor: AppColors.outlineVariant.withValues(alpha: 0.4),
+                  disabledInactiveTrackColor: AppColors.surfaceContainerLow,
+                ),
+                child: const Slider(
+                  value: 0,
+                  min: 0,
+                  max: 100,
+                  onChanged: null,
+                ),
               ),
             ],
 
