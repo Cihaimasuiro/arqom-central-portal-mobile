@@ -180,6 +180,145 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
     }
   }
 
+  void _showGroupEmployeeDropdownPicker(BuildContext context) {
+    final searchController = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final query = searchController.text.trim().toLowerCase();
+            final filteredEmployees = query.isEmpty
+                ? _availableEmployees
+                : _availableEmployees.where((emp) {
+                    return emp.name.toLowerCase().contains(query) ||
+                        emp.position.toLowerCase().contains(query) ||
+                        emp.division.toLowerCase().contains(query);
+                  }).toList();
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.75,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Pilih Pegawai Peserta Dinas',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${_selectedGroupEmployeeIds.length} dipilih',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama atau divisi...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.search, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onChanged: (_) => setModalState(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  Expanded(
+                    child: filteredEmployees.isEmpty
+                        ? const Center(
+                            child: Text('Pegawai tidak ditemukan', style: TextStyle(fontSize: 12, color: AppColors.outline)),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredEmployees.length,
+                            itemBuilder: (ctx, i) {
+                              final emp = filteredEmployees[i];
+                              final isSelected = _selectedGroupEmployeeIds.contains(emp.id);
+                              return CheckboxListTile(
+                                value: isSelected,
+                                activeColor: AppColors.primary,
+                                title: Text(emp.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                subtitle: Text(
+                                  '${emp.position.isNotEmpty ? emp.position : "-"} • ${emp.division}',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                                ),
+                                onChanged: (checked) {
+                                  setState(() {
+                                    if (checked == true) {
+                                      _selectedGroupEmployeeIds.add(emp.id);
+                                    } else {
+                                      if (_selectedGroupEmployeeIds.length > 1) {
+                                        _selectedGroupEmployeeIds.remove(emp.id);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Minimal 1 pegawai harus dipilih')),
+                                        );
+                                      }
+                                    }
+                                  });
+                                  setModalState(() {});
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Simpan Pilihan', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,61 +414,120 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
               ),
               const SizedBox(height: 18),
 
-              // Peserta Selection
-              if (!_loadingMeta && _availableEmployees.isNotEmpty) ...[
-                Text(
-                  _tipePeserta == 'individu' ? 'Pegawai yang Ditugaskan *' : 'Daftar Pegawai yang Ditugaskan *',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                if (_tipePeserta == 'individu') ...[
-                  DropdownButtonFormField<int>(
-                    value: _selectedSingleEmployeeId,
-                    isExpanded: true,
+              // Peserta Selection (Dropdown)
+              Text(
+                _tipePeserta == 'individu' ? 'Pegawai yang Ditugaskan *' : 'Daftar Pegawai yang Ditugaskan *',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (_loadingMeta)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: const Row(
+                    children: [
+                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                      SizedBox(width: 10),
+                      Text('Memuat daftar pegawai...', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)),
+                    ],
+                  ),
+                )
+              else if (_availableEmployees.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: const Text('Tidak ada data pegawai yang tersedia', style: TextStyle(fontSize: 12, color: AppColors.outline)),
+                )
+              else if (_tipePeserta == 'individu')
+                DropdownButtonFormField<int>(
+                  value: _selectedSingleEmployeeId,
+                  isExpanded: true,
+                  hint: const Text('Pilih Pegawai', style: TextStyle(fontSize: 12)),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                  ),
+                  items: _availableEmployees
+                      .map((emp) => DropdownMenuItem(
+                            value: emp.id,
+                            child: Text(
+                              '${emp.name} (${emp.position.isNotEmpty ? emp.position : emp.division})',
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedSingleEmployeeId = val),
+                  validator: (val) => val == null ? 'Wajib pilih pegawai yang ditugaskan' : null,
+                )
+              else ...[
+                // Multi-select dropdown for Kelompok
+                InkWell(
+                  onTap: () => _showGroupEmployeeDropdownPicker(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InputDecorator(
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: AppColors.surface,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                      suffixIcon: const Icon(Icons.arrow_drop_down, color: AppColors.onSurfaceVariant),
                     ),
-                    items: _availableEmployees
-                        .map((emp) => DropdownMenuItem(
-                              value: emp.id,
-                              child: Text('${emp.name} (${emp.position})', style: const TextStyle(fontSize: 12)),
+                    child: Text(
+                      _selectedGroupEmployeeIds.isEmpty
+                          ? 'Pilih pegawai dari dropdown...'
+                          : '${_selectedGroupEmployeeIds.length} Pegawai Dipilih',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: _selectedGroupEmployeeIds.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
+                        color: _selectedGroupEmployeeIds.isNotEmpty ? AppColors.onSurface : AppColors.outline,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_selectedGroupEmployeeIds.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _availableEmployees
+                        .where((emp) => _selectedGroupEmployeeIds.contains(emp.id))
+                        .map((emp) => Chip(
+                              backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.3),
+                              label: Text(
+                                emp.name,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                              deleteIcon: const Icon(Icons.close, size: 14, color: AppColors.primary),
+                              onDeleted: () {
+                                if (_selectedGroupEmployeeIds.length > 1) {
+                                  setState(() => _selectedGroupEmployeeIds.remove(emp.id));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Minimal 1 pegawai harus dipilih')),
+                                  );
+                                }
+                              },
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide.none),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             ))
                         .toList(),
-                    onChanged: (val) => setState(() => _selectedSingleEmployeeId = val),
-                  ),
-                ] else ...[
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: _availableEmployees.map((emp) {
-                      final isSelected = _selectedGroupEmployeeIds.contains(emp.id);
-                      return FilterChip(
-                        selected: isSelected,
-                        label: Text(emp.name, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppColors.onSurface)),
-                        selectedColor: AppColors.primary,
-                        checkmarkColor: Colors.white,
-                        backgroundColor: AppColors.surface,
-                        onSelected: (val) {
-                          setState(() {
-                            if (val) {
-                              _selectedGroupEmployeeIds.add(emp.id);
-                            } else {
-                              if (_selectedGroupEmployeeIds.length > 1) {
-                                _selectedGroupEmployeeIds.remove(emp.id);
-                              }
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
                   ),
                 ],
-                const SizedBox(height: 18),
               ],
+              const SizedBox(height: 18),
 
               // Lokasi / Kota Tujuan
               _buildInputField(
