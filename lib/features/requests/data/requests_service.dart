@@ -8,11 +8,13 @@ class RequestApiResponse<T> {
   final bool success;
   final String message;
   final T? data;
+  final int? statusCode;
 
   RequestApiResponse({
     required this.success,
     required this.message,
     this.data,
+    this.statusCode,
   });
 }
 
@@ -52,17 +54,17 @@ class RequestsService {
 
     switch (response.statusCode) {
       case 401:
-        return 'Sesi login telah berakhir. Silakan login kembali.';
+        return 'Sesi login telah berakhir atau tidak valid (401). Silakan login kembali.';
       case 403:
-        return 'Anda tidak memiliki hak akses untuk aksi ini.';
+        return 'Anda tidak memiliki hak akses mengubah/menyetujui data ini (403).';
       case 404:
-        return 'Data pengajuan tidak ditemukan.';
+        return 'Data pengajuan, target, atau item rencana tidak ditemukan (404).';
       case 422:
-        return 'Validasi formulir gagal. Mohon periksa kembali isian Anda.';
+        return 'Validasi gagal. Periksa kembali isian formulir Anda (422).';
       case 500:
-        return 'Terjadi gangguan pada server internal (500).';
+        return 'Terjadi kesalahan pada server backend (500).';
       default:
-        return 'Gagal memproses permohonan (${response.statusCode}).';
+        return 'Permintaan gagal diproses (${response.statusCode}).';
     }
   }
 
@@ -83,11 +85,13 @@ class RequestsService {
           success: true,
           message: decoded['message']?.toString() ?? 'Berhasil memuat metadata',
           data: data,
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -130,11 +134,13 @@ class RequestsService {
           success: true,
           message: decoded['message']?.toString() ?? 'Berhasil memuat pengajuan',
           data: items,
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -215,11 +221,13 @@ class RequestsService {
           success: true,
           message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibuat.',
           data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -245,11 +253,13 @@ class RequestsService {
           success: true,
           message: decoded['message']?.toString() ?? 'Berhasil memuat detail',
           data: item,
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -273,11 +283,13 @@ class RequestsService {
         return RequestApiResponse(
           success: true,
           message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibatalkan.',
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -306,11 +318,13 @@ class RequestsService {
           success: true,
           message: decoded['message']?.toString() ?? 'Berhasil memuat persetujuan.',
           data: items,
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -341,11 +355,13 @@ class RequestsService {
         return RequestApiResponse(
           success: true,
           message: decoded['message']?.toString() ?? 'Persetujuan berhasil diproses: Disetujui.',
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {
@@ -374,11 +390,13 @@ class RequestsService {
         return RequestApiResponse(
           success: true,
           message: decoded['message']?.toString() ?? 'Persetujuan berhasil diproses: Ditolak.',
+          statusCode: res.statusCode,
         );
       } else {
         return RequestApiResponse(
           success: false,
           message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
         );
       }
     } catch (e) {

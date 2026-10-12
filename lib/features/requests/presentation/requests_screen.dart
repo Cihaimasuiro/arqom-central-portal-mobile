@@ -117,10 +117,47 @@ class _RequestsScreenState extends State<RequestsScreen> {
         );
         _fetchData(silent: true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.message), backgroundColor: AppColors.error),
-        );
+        _handleActionError(res);
       }
+    }
+  }
+
+  void _handleActionError(RequestApiResponse res) {
+    if (res.statusCode == 403) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.gpp_bad_outlined, color: AppColors.error, size: 24),
+              SizedBox(width: 8),
+              Text('Akses Ditolak', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            res.message,
+            style: const TextStyle(fontSize: 13),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Mengerti'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor: res.statusCode == 422 ? Colors.orange.shade800 : AppColors.error,
+        ),
+      );
     }
   }
 
@@ -182,9 +219,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         );
         _fetchData(silent: true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.message), backgroundColor: AppColors.error),
-        );
+        _handleActionError(res);
       }
     }
   }
@@ -255,9 +290,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         );
         _fetchData(silent: true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.message), backgroundColor: AppColors.error),
-        );
+        _handleActionError(res);
       }
     }
   }
@@ -1003,7 +1036,40 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildApprovalTimeline(RequestItem item) {
-    final managerStatus = item.managerApproval?.status ?? 'Menunggu';
+    if (item.approvalFlow == 'auto_approved') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.verified, size: 18, color: Colors.green),
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Disetujui Otomatis',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                  Text(
+                    'Level Manager HCGA / Direktur (Persetujuan instan tanpa verifikasi berjenjang)',
+                    style: TextStyle(fontSize: 10, color: AppColors.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final isHcgaOnly = item.approvalFlow == 'hcga_only';
+    final managerStatus = isHcgaOnly ? 'Dilewati' : (item.managerApproval?.status ?? 'Menunggu');
     final hcgaStatus = item.hcgaApproval?.status ?? 'Menunggu';
 
     return Container(
@@ -1015,15 +1081,32 @@ class _RequestsScreenState extends State<RequestsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'ALUR PERSETUJUAN BERJENJANG',
-            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.outline),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'ALUR PERSETUJUAN BERJENJANG',
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.outline),
+              ),
+              if (isHcgaOnly)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'Direct HCGA',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           _buildTimelineRow(
             '1. Atasan Langsung / Manager',
             managerStatus,
-            item.managerApproval?.note,
+            isHcgaOnly ? 'Dilewati (Langsung di bawah HCGA/Direksi)' : item.managerApproval?.note,
             item.managerApproval?.approvedBy,
           ),
           const Divider(height: 12, thickness: 0.5),
@@ -1041,12 +1124,16 @@ class _RequestsScreenState extends State<RequestsScreen> {
   Widget _buildTimelineRow(String role, String status, String? note, String? approver) {
     Color color;
     IconData icon;
-    if (status.toLowerCase().contains('setuju')) {
+    final lower = status.toLowerCase();
+    if (lower.contains('setuju')) {
       color = Colors.green;
       icon = Icons.check_circle;
-    } else if (status.toLowerCase().contains('tolak')) {
+    } else if (lower.contains('tolak')) {
       color = AppColors.error;
       icon = Icons.cancel;
+    } else if (lower.contains('lewat')) {
+      color = AppColors.secondary;
+      icon = Icons.fast_forward_rounded;
     } else {
       color = AppColors.outline;
       icon = Icons.schedule;

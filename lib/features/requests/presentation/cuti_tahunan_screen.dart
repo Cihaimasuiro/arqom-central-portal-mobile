@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/requests_service.dart';
+import 'widgets/request_error_dialog.dart';
 
 class CutiTahunanScreen extends StatefulWidget {
   const CutiTahunanScreen({super.key});
@@ -70,12 +71,7 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
       );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.message),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      handleRequestApiError(context, res);
     }
   }
 

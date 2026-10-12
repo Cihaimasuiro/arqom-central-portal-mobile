@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
+import 'widgets/request_error_dialog.dart';
 
 class DinasLuarScreen extends StatefulWidget {
   const DinasLuarScreen({super.key});
@@ -140,12 +141,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
       );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.message),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      handleRequestApiError(context, res);
     }
   }
 

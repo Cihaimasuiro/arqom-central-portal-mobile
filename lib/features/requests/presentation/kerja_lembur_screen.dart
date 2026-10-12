@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/requests_service.dart';
+import 'widgets/request_error_dialog.dart';
 
 class KerjaLemburScreen extends StatefulWidget {
   const KerjaLemburScreen({super.key});
@@ -99,12 +100,7 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
       );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.message),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      handleRequestApiError(context, res);
     }
   }
 
