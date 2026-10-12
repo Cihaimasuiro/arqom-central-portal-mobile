@@ -322,6 +322,39 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              if (item.isParticipant && !item.isOwner) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.group_outlined, color: Colors.blue, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Perjalanan Dinas Kelompok',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Anda terdaftar sebagai peserta oleh koordinator (${item.employee?.name ?? "-"}). Pembatalan hanya dapat dilakukan oleh koordinator.',
+                              style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -408,12 +441,136 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   ],
                 ),
               ],
+
+              // Tipe Waktu & Peserta Chips
+              if (item.parsedDetails?.tipeWaktu != null || item.parsedDetails?.tipePeserta != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (item.parsedDetails?.tipeWaktu != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.schedule, size: 12, color: AppColors.onSurfaceVariant),
+                            const SizedBox(width: 4),
+                            Text(
+                              item.parsedDetails!.tipeWaktu == 'menginap' ? 'Menginap' : 'Harian (PP)',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (item.parsedDetails?.tipePeserta != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.people_outline, size: 12, color: AppColors.onSurfaceVariant),
+                            const SizedBox(width: 4),
+                            Text(
+                              item.parsedDetails!.tipePeserta == 'kelompok' ? 'Kelompok' : 'Individu',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+
+              // Daftar Peserta Dinas
+              if (item.parsedDetails?.peserta.isNotEmpty == true) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'Daftar Peserta (${item.parsedDetails!.peserta.length} Pegawai):',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.outline),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    children: item.parsedDetails!.peserta.map((p) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: AppColors.primaryContainer,
+                            child: Text(
+                              p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                Text(
+                                  '${p.position.isNotEmpty ? p.position : "-"} • ${p.division.isNotEmpty ? p.division : "-"}',
+                                  style: const TextStyle(fontSize: 10, color: AppColors.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )).toList(),
+                  ),
+                ),
+              ],
+
+              // Lampiran
+              if (item.attachmentUrl != null && item.attachmentUrl!.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.attach_file_rounded, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lampiran: ${item.attachmentUrl!.split("/").last}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
 
               // Alur Persetujuan
               _buildApprovalTimeline(item),
 
-              if (item.canCancel) ...[
+              if (item.canCancel && item.isOwner) ...[
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
@@ -659,14 +816,36 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildQuickCategories(BuildContext context) {
-    final canElevated = _meta?.canUseElevatedTypes ?? true;
+    final canElevated = _meta?.canUseElevatedTypes ?? false;
+    final role = _meta?.userRole;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Buat Pengajuan Baru',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Buat Pengajuan Baru',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            if (role != null && role.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: canElevated ? Colors.purple.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Akses: ${role.toUpperCase()}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: canElevated ? Colors.purple : Colors.blue,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
         GridView.count(
@@ -693,24 +872,28 @@ class _RequestsScreenState extends State<RequestsScreen> {
               AppColors.error,
               onTap: () => _openForm(const IzinSakitScreen()),
             ),
-            if (canElevated) ...[
-              _buildCategoryButton(
-                context,
-                'Perjalanan Dinas',
-                Icons.flight_takeoff_rounded,
-                AppColors.tertiaryContainer.withValues(alpha: 0.4),
-                AppColors.tertiary,
-                onTap: () => _openForm(const DinasLuarScreen()),
-              ),
-              _buildCategoryButton(
-                context,
-                'Lembur',
-                Icons.access_time_filled_rounded,
-                Colors.indigo.withValues(alpha: 0.12),
-                Colors.indigo,
-                onTap: () => _openForm(const KerjaLemburScreen()),
-              ),
-            ],
+            _buildCategoryButton(
+              context,
+              'Perjalanan Dinas',
+              Icons.flight_takeoff_rounded,
+              canElevated ? AppColors.tertiaryContainer.withValues(alpha: 0.4) : Colors.grey.shade100,
+              canElevated ? AppColors.tertiary : Colors.grey.shade400,
+              isLocked: !canElevated,
+              onTap: canElevated
+                  ? () => _openForm(const DinasLuarScreen())
+                  : () => _showElevatedRoleWarning('Perjalanan Dinas'),
+            ),
+            _buildCategoryButton(
+              context,
+              'Lembur',
+              Icons.access_time_filled_rounded,
+              canElevated ? Colors.indigo.withValues(alpha: 0.12) : Colors.grey.shade100,
+              canElevated ? Colors.indigo : Colors.grey.shade400,
+              isLocked: !canElevated,
+              onTap: canElevated
+                  ? () => _openForm(const KerjaLemburScreen())
+                  : () => _showElevatedRoleWarning('Kerja Lembur'),
+            ),
             _buildCategoryButton(
               context,
               'Reimburse',
@@ -725,6 +908,36 @@ class _RequestsScreenState extends State<RequestsScreen> {
     );
   }
 
+  void _showElevatedRoleWarning(String formName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: AppColors.error, size: 22),
+            SizedBox(width: 8),
+            Text('Akses Khusus (403)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Pengajuan $formName hanya dapat diajukan oleh akun minimal level Head (Head, Lead, Manager, Direktur).\n\nAkun Anda (${_meta?.userRole ?? "staff"}) hanya diizinkan mengajukan Cuti, Izin, dan Sakit.',
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Mengerti'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryButton(
     BuildContext context,
     String label,
@@ -732,6 +945,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
     Color bgColor,
     Color iconColor, {
     VoidCallback? onTap,
+    bool isLocked = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -751,27 +965,49 @@ class _RequestsScreenState extends State<RequestsScreen> {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-                  child: Icon(icon, color: iconColor, size: 20),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+                        child: Icon(icon, color: iconColor, size: 20),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isLocked ? AppColors.outline : null,
+                            ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              if (isLocked)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock_rounded, size: 10, color: Colors.grey),
+                  ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -934,6 +1170,20 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           item.requestNumber,
                           style: const TextStyle(fontSize: 10, color: AppColors.onSurfaceVariant),
                         ),
+                        if (item.isParticipant && !item.isOwner) ...[
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Peserta Kelompok (${item.employee?.name ?? "Koordinator"})',
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -999,6 +1249,42 @@ class _RequestsScreenState extends State<RequestsScreen> {
                         ],
                       ),
                     ],
+                    if (item.parsedDetails?.tipePeserta != null || item.parsedDetails?.tipeWaktu != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          if (item.parsedDetails?.tipeWaktu != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                item.parsedDetails!.tipeWaktu == 'menginap' ? 'Menginap' : 'Harian (PP)',
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (item.parsedDetails?.tipePeserta != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                item.parsedDetails!.tipePeserta == 'kelompok'
+                                    ? 'Kelompok (${item.parsedDetails!.peserta.length} Orang)'
+                                    : 'Individu',
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Text(
                       item.description,
@@ -1013,7 +1299,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
               _buildApprovalTimeline(item),
 
               // Cancel Action Button
-              if (item.canCancel) ...[
+              if (item.canCancel && item.isOwner) ...[
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerRight,

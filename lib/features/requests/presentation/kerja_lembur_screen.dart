@@ -22,6 +22,49 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _checkRoleAccess();
+  }
+
+  Future<void> _checkRoleAccess() async {
+    final metaRes = await RequestsService.getRequestMeta();
+    if (mounted && metaRes.success && metaRes.data != null && !metaRes.data!.canUseElevatedTypes) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.gpp_bad_outlined, color: AppColors.error, size: 24),
+              SizedBox(width: 8),
+              Text('Akses Ditolak (403)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Pengajuan Kerja Lembur hanya dapat dibuat oleh akun minimal level Head (Head, Lead, Manager, Direktur).',
+            style: TextStyle(fontSize: 13),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Kembali'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _dateController.dispose();
     _startTimeController.dispose();

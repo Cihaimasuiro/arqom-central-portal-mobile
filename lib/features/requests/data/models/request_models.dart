@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class RequestMeta {
+  final String? userRole;
   final bool canUseElevatedTypes;
   final List<RequestTypeOption> availableTypes;
   final List<EmployeeSimple> employees;
 
   RequestMeta({
+    this.userRole,
     required this.canUseElevatedTypes,
     required this.availableTypes,
     required this.employees,
@@ -17,6 +19,7 @@ class RequestMeta {
     final rawEmp = json['employees'] as List<dynamic>? ?? [];
 
     return RequestMeta(
+      userRole: json['user_role']?.toString(),
       canUseElevatedTypes: json['can_use_elevated_types'] == true,
       availableTypes: rawTypes.map((e) => RequestTypeOption.fromJson(e as Map<String, dynamic>)).toList(),
       employees: rawEmp.map((e) => EmployeeSimple.fromJson(e as Map<String, dynamic>)).toList(),
@@ -67,6 +70,32 @@ class EmployeeSimple {
   }
 }
 
+class RequestDetails {
+  final String? tipeWaktu;
+  final String? tipePeserta;
+  final List<int> pesertaIds;
+  final List<EmployeeSimple> peserta;
+
+  RequestDetails({
+    this.tipeWaktu,
+    this.tipePeserta,
+    this.pesertaIds = const [],
+    this.peserta = const [],
+  });
+
+  factory RequestDetails.fromJson(Map<String, dynamic> json) {
+    final rawIds = json['peserta_ids'] as List<dynamic>? ?? [];
+    final rawList = json['peserta'] as List<dynamic>? ?? [];
+
+    return RequestDetails(
+      tipeWaktu: json['tipe_waktu']?.toString(),
+      tipePeserta: json['tipe_peserta']?.toString(),
+      pesertaIds: rawIds.map((e) => int.tryParse(e.toString()) ?? 0).where((id) => id > 0).toList(),
+      peserta: rawList.map((e) => EmployeeSimple.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
 class RequestItem {
   final int id;
   final String requestNumber;
@@ -80,10 +109,13 @@ class RequestItem {
   final String? endTime;
   final String? location;
   final Map<String, dynamic>? details;
+  final RequestDetails? parsedDetails;
   final String? attachmentUrl;
   final String status; // Menunggu Manager, Menunggu HCGA, Disetujui, Ditolak, Dibatalkan
   final String? displayStatus;
   final String? statusClass;
+  final bool isOwner;
+  final bool isParticipant;
   final bool canCancel;
   final String? approvalFlow;
   final ApprovalInfo? managerApproval;
@@ -104,10 +136,13 @@ class RequestItem {
     this.endTime,
     this.location,
     this.details,
+    this.parsedDetails,
     this.attachmentUrl,
     required this.status,
     this.displayStatus,
     this.statusClass,
+    this.isOwner = true,
+    this.isParticipant = false,
     required this.canCancel,
     this.approvalFlow,
     this.managerApproval,
@@ -118,9 +153,14 @@ class RequestItem {
 
   factory RequestItem.fromJson(Map<String, dynamic> json) {
     final statusStr = json['status']?.toString() ?? 'Menunggu Manager';
+    final isOwnerVal = json['is_owner'] is bool ? json['is_owner'] as bool : true;
+    final isParticipantVal = json['is_participant'] is bool ? json['is_participant'] as bool : false;
     final canCancelVal = json['can_cancel'] is bool
         ? json['can_cancel'] as bool
-        : (statusStr.toLowerCase().contains('menunggu') || statusStr.toLowerCase().contains('pending'));
+        : (isOwnerVal && (statusStr.toLowerCase().contains('menunggu') || statusStr.toLowerCase().contains('pending')));
+
+    final detailsMap = json['details'] is Map<String, dynamic> ? json['details'] as Map<String, dynamic> : null;
+    final parsedDetailsVal = detailsMap != null ? RequestDetails.fromJson(detailsMap) : null;
 
     return RequestItem(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
@@ -134,11 +174,14 @@ class RequestItem {
       startTime: json['start_time']?.toString(),
       endTime: json['end_time']?.toString(),
       location: json['location']?.toString(),
-      details: json['details'] is Map<String, dynamic> ? json['details'] as Map<String, dynamic> : null,
+      details: detailsMap,
+      parsedDetails: parsedDetailsVal,
       attachmentUrl: json['attachment_url']?.toString(),
       status: statusStr,
       displayStatus: json['display_status']?.toString(),
       statusClass: json['status_class']?.toString(),
+      isOwner: isOwnerVal,
+      isParticipant: isParticipantVal,
       canCancel: canCancelVal,
       approvalFlow: json['approval_flow']?.toString(),
       managerApproval: json['manager_approval'] != null && json['manager_approval'] is Map<String, dynamic>

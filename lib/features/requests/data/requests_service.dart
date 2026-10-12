@@ -80,7 +80,7 @@ class RequestsService {
         final decoded = jsonDecode(res.body);
         final data = decoded['data'] != null && decoded['data'] is Map<String, dynamic>
             ? RequestMeta.fromJson(decoded['data'] as Map<String, dynamic>)
-            : RequestMeta(canUseElevatedTypes: true, availableTypes: [], employees: []);
+            : RequestMeta(canUseElevatedTypes: false, availableTypes: [], employees: []);
         return RequestApiResponse(
           success: true,
           message: decoded['message']?.toString() ?? 'Berhasil memuat metadata',
