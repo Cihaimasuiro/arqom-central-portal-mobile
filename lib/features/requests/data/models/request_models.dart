@@ -1,10 +1,77 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
+class RequestMeta {
+  final bool canUseElevatedTypes;
+  final List<RequestTypeOption> availableTypes;
+  final List<EmployeeSimple> employees;
+
+  RequestMeta({
+    required this.canUseElevatedTypes,
+    required this.availableTypes,
+    required this.employees,
+  });
+
+  factory RequestMeta.fromJson(Map<String, dynamic> json) {
+    final rawTypes = json['available_types'] as List<dynamic>? ?? [];
+    final rawEmp = json['employees'] as List<dynamic>? ?? [];
+
+    return RequestMeta(
+      canUseElevatedTypes: json['can_use_elevated_types'] == true,
+      availableTypes: rawTypes.map((e) => RequestTypeOption.fromJson(e as Map<String, dynamic>)).toList(),
+      employees: rawEmp.map((e) => EmployeeSimple.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
+class RequestTypeOption {
+  final String key;
+  final String label;
+  final bool elevated;
+
+  RequestTypeOption({
+    required this.key,
+    required this.label,
+    required this.elevated,
+  });
+
+  factory RequestTypeOption.fromJson(Map<String, dynamic> json) {
+    return RequestTypeOption(
+      key: json['key']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      elevated: json['elevated'] == true,
+    );
+  }
+}
+
+class EmployeeSimple {
+  final int id;
+  final String name;
+  final String division;
+  final String position;
+
+  EmployeeSimple({
+    required this.id,
+    required this.name,
+    required this.division,
+    required this.position,
+  });
+
+  factory EmployeeSimple.fromJson(Map<String, dynamic> json) {
+    return EmployeeSimple(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name']?.toString() ?? '',
+      division: json['division']?.toString() ?? '',
+      position: json['position']?.toString() ?? '',
+    );
+  }
+}
+
 class RequestItem {
   final int id;
   final String requestNumber;
   final String requestType; // cuti, izin, sakit, lembur, perjalanan_dinas
+  final String? rawTypeLabel;
   final String title;
   final String description;
   final String startDate;
@@ -12,8 +79,13 @@ class RequestItem {
   final String? startTime;
   final String? endTime;
   final String? location;
+  final Map<String, dynamic>? details;
   final String? attachmentUrl;
   final String status; // Menunggu Manager, Menunggu HCGA, Disetujui, Ditolak, Dibatalkan
+  final String? displayStatus;
+  final String? statusClass;
+  final bool canCancel;
+  final String? approvalFlow;
   final ApprovalInfo? managerApproval;
   final ApprovalInfo? hcgaApproval;
   final String? submittedAt;
@@ -23,6 +95,7 @@ class RequestItem {
     required this.id,
     required this.requestNumber,
     required this.requestType,
+    this.rawTypeLabel,
     required this.title,
     required this.description,
     required this.startDate,
@@ -30,8 +103,13 @@ class RequestItem {
     this.startTime,
     this.endTime,
     this.location,
+    this.details,
     this.attachmentUrl,
     required this.status,
+    this.displayStatus,
+    this.statusClass,
+    required this.canCancel,
+    this.approvalFlow,
     this.managerApproval,
     this.hcgaApproval,
     this.submittedAt,
@@ -39,10 +117,16 @@ class RequestItem {
   });
 
   factory RequestItem.fromJson(Map<String, dynamic> json) {
+    final statusStr = json['status']?.toString() ?? 'Menunggu Manager';
+    final canCancelVal = json['can_cancel'] is bool
+        ? json['can_cancel'] as bool
+        : (statusStr.toLowerCase().contains('menunggu') || statusStr.toLowerCase().contains('pending'));
+
     return RequestItem(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
       requestNumber: json['request_number']?.toString() ?? '',
       requestType: json['request_type']?.toString().toLowerCase() ?? 'izin',
+      rawTypeLabel: json['type_label']?.toString(),
       title: json['title']?.toString() ?? 'Pengajuan',
       description: json['description']?.toString() ?? '',
       startDate: json['start_date']?.toString() ?? '',
@@ -50,8 +134,13 @@ class RequestItem {
       startTime: json['start_time']?.toString(),
       endTime: json['end_time']?.toString(),
       location: json['location']?.toString(),
+      details: json['details'] is Map<String, dynamic> ? json['details'] as Map<String, dynamic> : null,
       attachmentUrl: json['attachment_url']?.toString(),
-      status: json['status']?.toString() ?? 'Menunggu Manager',
+      status: statusStr,
+      displayStatus: json['display_status']?.toString(),
+      statusClass: json['status_class']?.toString(),
+      canCancel: canCancelVal,
+      approvalFlow: json['approval_flow']?.toString(),
       managerApproval: json['manager_approval'] != null && json['manager_approval'] is Map<String, dynamic>
           ? ApprovalInfo.fromJson(json['manager_approval'] as Map<String, dynamic>)
           : null,
@@ -65,27 +154,32 @@ class RequestItem {
     );
   }
 
-  bool get canCancel {
-    final s = status.toLowerCase();
-    return s.contains('menunggu') || s.contains('pending');
-  }
-
   String get typeLabel {
+    if (rawTypeLabel != null && rawTypeLabel!.isNotEmpty) {
+      return rawTypeLabel!;
+    }
     switch (requestType) {
       case 'cuti':
-        return 'Cuti Tahunan';
+        return 'Libur Cuti';
       case 'sakit':
-        return 'Sakit';
+        return 'Tidak Masuk (Sakit)';
       case 'izin':
-        return 'Izin Ketidakhadiran';
+        return 'Tidak Masuk (Izin)';
       case 'lembur':
-        return 'Kerja Lembur';
+        return 'Lembur';
       case 'perjalanan_dinas':
       case 'dinas':
         return 'Perjalanan Dinas';
       default:
         return requestType.toUpperCase();
     }
+  }
+
+  String get effectiveDisplayStatus {
+    if (displayStatus != null && displayStatus!.isNotEmpty) {
+      return displayStatus!;
+    }
+    return status.toUpperCase();
   }
 
   IconData get typeIcon {
@@ -131,7 +225,7 @@ class RequestItem {
     } else if (s.contains('ditolak') || s.contains('dibatalkan')) {
       return AppColors.error;
     } else {
-      return AppColors.primary;
+      return Colors.orange.shade800;
     }
   }
 }

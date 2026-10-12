@@ -24,6 +24,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
   List<RequestItem> _myRequests = [];
   List<RequestItem> _pendingApprovals = [];
+  RequestMeta? _meta;
 
   final List<String> _statusFilters = [
     'Semua',
@@ -53,6 +54,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         status: _selectedStatusFilter == 'Semua' ? null : _selectedStatusFilter,
       );
       final approvalsRes = await RequestsService.getApprovals();
+      final metaRes = await RequestsService.getRequestMeta();
 
       if (mounted) {
         setState(() {
@@ -65,6 +67,10 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
           if (approvalsRes.success && approvalsRes.data != null) {
             _pendingApprovals = approvalsRes.data!;
+          }
+
+          if (metaRes.success && metaRes.data != null) {
+            _meta = metaRes.data!;
           }
         });
       }
@@ -254,6 +260,150 @@ class _RequestsScreenState extends State<RequestsScreen> {
         );
       }
     }
+  }
+
+  void _showDetailBottomSheet(RequestItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: item.typeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(item.typeIcon, color: item.typeColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.typeLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        Text(
+                          item.requestNumber,
+                          style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: item.statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.effectiveDisplayStatus,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: item.statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+
+              // Detail Section
+              const Text('Keterangan / Alasan:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.outline)),
+              const SizedBox(height: 4),
+              Text(item.description, style: const TextStyle(fontSize: 13, height: 1.4)),
+              const SizedBox(height: 14),
+
+              // Waktu & Tanggal
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.endDate != null && item.endDate != item.startDate
+                        ? '${item.startDate} s/d ${item.endDate}'
+                        : item.startDate,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  if (item.startTime != null && item.endTime != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${item.startTime} - ${item.endTime})',
+                      style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+                    ),
+                  ],
+                ],
+              ),
+
+              if (item.location != null && item.location!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.tertiary),
+                    const SizedBox(width: 6),
+                    Text(item.location!, style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Alur Persetujuan
+              _buildApprovalTimeline(item),
+
+              if (item.canCancel) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _handleCancelRequest(item);
+                    },
+                    icon: const Icon(Icons.cancel_outlined, size: 16, color: AppColors.error),
+                    label: const Text('Batalkan Pengajuan Ini', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openForm(Widget screen) async {
@@ -476,6 +626,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildQuickCategories(BuildContext context) {
+    final canElevated = _meta?.canUseElevatedTypes ?? true;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -494,7 +646,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
           children: [
             _buildCategoryButton(
               context,
-              'Cuti Tahunan',
+              'Libur Cuti',
               Icons.beach_access_rounded,
               AppColors.primaryContainer.withValues(alpha: 0.4),
               AppColors.primary,
@@ -508,22 +660,24 @@ class _RequestsScreenState extends State<RequestsScreen> {
               AppColors.error,
               onTap: () => _openForm(const IzinSakitScreen()),
             ),
-            _buildCategoryButton(
-              context,
-              'Dinas Luar',
-              Icons.flight_takeoff_rounded,
-              AppColors.tertiaryContainer.withValues(alpha: 0.4),
-              AppColors.tertiary,
-              onTap: () => _openForm(const DinasLuarScreen()),
-            ),
-            _buildCategoryButton(
-              context,
-              'Kerja Lembur',
-              Icons.access_time_filled_rounded,
-              Colors.indigo.withValues(alpha: 0.12),
-              Colors.indigo,
-              onTap: () => _openForm(const KerjaLemburScreen()),
-            ),
+            if (canElevated) ...[
+              _buildCategoryButton(
+                context,
+                'Perjalanan Dinas',
+                Icons.flight_takeoff_rounded,
+                AppColors.tertiaryContainer.withValues(alpha: 0.4),
+                AppColors.tertiary,
+                onTap: () => _openForm(const DinasLuarScreen()),
+              ),
+              _buildCategoryButton(
+                context,
+                'Lembur',
+                Icons.access_time_filled_rounded,
+                Colors.indigo.withValues(alpha: 0.12),
+                Colors.indigo,
+                onTap: () => _openForm(const KerjaLemburScreen()),
+              ),
+            ],
             _buildCategoryButton(
               context,
               'Reimburse',
@@ -700,146 +854,149 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildMyRequestCard(RequestItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top: Icon, Title & Status Badge
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: item.typeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () => _showDetailBottomSheet(item),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top: Icon, Title & Status Badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: item.typeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(item.typeIcon, color: item.typeColor, size: 20),
                   ),
-                  child: Icon(item.typeIcon, color: item.typeColor, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.typeLabel,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.typeLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Text(
+                          item.requestNumber,
+                          style: const TextStyle(fontSize: 10, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: item.statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.effectiveDisplayStatus,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: item.statusColor,
                       ),
-                      Text(
-                        item.requestNumber,
-                        style: const TextStyle(fontSize: 10, color: AppColors.onSurfaceVariant),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Date & Detail Box
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          item.endDate != null && item.endDate != item.startDate
+                              ? '${item.startDate} s/d ${item.endDate}'
+                              : item.startDate,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        if (item.startTime != null && item.endTime != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '(${item.startTime} - ${item.endTime})',
+                            style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (item.location != null && item.location!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 13, color: AppColors.tertiary),
+                          const SizedBox(width: 6),
+                          Text(
+                            item.location!,
+                            style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.description,
+                      style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.onSurface),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: item.statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    item.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: item.statusColor,
+              ),
+              const SizedBox(height: 12),
+
+              // Approval Flow Steps
+              _buildApprovalTimeline(item),
+
+              // Cancel Action Button
+              if (item.canCancel) ...[
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _handleCancelRequest(item),
+                    icon: const Icon(Icons.cancel_outlined, size: 14, color: AppColors.error),
+                    label: const Text('Batalkan Pengajuan', style: TextStyle(fontSize: 11, color: AppColors.error)),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-
-            // Date & Detail Box
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        item.endDate != null && item.endDate != item.startDate
-                            ? '${item.startDate} s/d ${item.endDate}'
-                            : item.startDate,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                      if (item.startTime != null && item.endTime != null) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          '(${item.startTime} - ${item.endTime})',
-                          style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (item.location != null && item.location!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 13, color: AppColors.tertiary),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.location!,
-                          style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Text(
-                    item.description,
-                    style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.onSurface),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Approval Flow Steps
-            _buildApprovalTimeline(item),
-
-            // Cancel Action Button
-            if (item.canCancel) ...[
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _handleCancelRequest(item),
-                  icon: const Icon(Icons.cancel_outlined, size: 14, color: AppColors.error),
-                  label: const Text('Batalkan Pengajuan', style: TextStyle(fontSize: 11, color: AppColors.error)),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  ),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -66,7 +66,39 @@ class RequestsService {
     }
   }
 
-  /// 5.2 Ambil Riwayat Pengajuan Sendiri
+  /// 5.2 Metadata Form Pengajuan & Daftar Karyawan
+  /// GET /api/requests/meta
+  static Future<RequestApiResponse<RequestMeta>> getRequestMeta() async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/meta');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        final data = decoded['data'] != null && decoded['data'] is Map<String, dynamic>
+            ? RequestMeta.fromJson(decoded['data'] as Map<String, dynamic>)
+            : RequestMeta(canUseElevatedTypes: true, availableTypes: [], employees: []);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Berhasil memuat metadata',
+          data: data,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.4 Ambil Riwayat Pengajuan Sendiri
   /// GET /api/requests?status=...&request_type=...
   static Future<RequestApiResponse<List<RequestItem>>> getRequests({
     String? status,
@@ -113,7 +145,7 @@ class RequestsService {
     }
   }
 
-  /// 5.3 Buat Pengajuan Baru
+  /// 5.5 Buat Pengajuan Baru
   /// POST /api/requests (multipart/form-data)
   static Future<RequestApiResponse<Map<String, dynamic>>> createRequest({
     required String requestType,
@@ -123,6 +155,9 @@ class RequestsService {
     String? startTime,
     String? endTime,
     String? location,
+    String? tipeWaktu,
+    String? tipePeserta,
+    List<int>? peserta,
     File? attachment,
   }) async {
     try {
@@ -151,6 +186,17 @@ class RequestsService {
       if (location != null && location.isNotEmpty) {
         request.fields['location'] = location;
       }
+      if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+        request.fields['tipe_waktu'] = tipeWaktu;
+      }
+      if (tipePeserta != null && tipePeserta.isNotEmpty) {
+        request.fields['tipe_peserta'] = tipePeserta;
+      }
+      if (peserta != null && peserta.isNotEmpty) {
+        for (int i = 0; i < peserta.length; i++) {
+          request.fields['peserta[$i]'] = peserta[i].toString();
+        }
+      }
 
       if (attachment != null && await attachment.exists()) {
         final multipartFile = await http.MultipartFile.fromPath(
@@ -167,7 +213,7 @@ class RequestsService {
         final decoded = jsonDecode(res.body);
         return RequestApiResponse(
           success: true,
-          message: decoded['message']?.toString() ?? 'Pengajuan berhasil dikirim.',
+          message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibuat.',
           data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
         );
       } else {
@@ -184,7 +230,37 @@ class RequestsService {
     }
   }
 
-  /// 5.4 Batalkan Pengajuan
+  /// 5.6 Detail Pengajuan
+  /// GET /api/requests/{id}
+  static Future<RequestApiResponse<RequestItem>> getRequestDetail(int id) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/$id');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        final item = RequestItem.fromJson(decoded['data'] as Map<String, dynamic>);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Berhasil memuat detail',
+          data: item,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+      );
+    }
+  }
+
+  /// 5.7 Batalkan Pengajuan
   /// DELETE /api/requests/{id}
   static Future<RequestApiResponse<void>> cancelRequest(int id) async {
     try {
@@ -212,7 +288,7 @@ class RequestsService {
     }
   }
 
-  /// 5.5 Daftar Pengajuan yang Perlu Disetujui (Inbox Approval Atasan)
+  /// 5.8 Daftar Pengajuan yang Perlu Disetujui (Inbox Approval Atasan)
   /// GET /api/requests/approvals
   static Future<RequestApiResponse<List<RequestItem>>> getApprovals() async {
     try {
@@ -245,7 +321,7 @@ class RequestsService {
     }
   }
 
-  /// 5.6 Setujui Pengajuan (Approve by Manager)
+  /// 5.9 Setujui Pengajuan (Approve by Manager)
   /// POST /api/requests/{id}/approve
   static Future<RequestApiResponse<void>> approveRequest(
     int id, {
@@ -280,7 +356,7 @@ class RequestsService {
     }
   }
 
-  /// 5.7 Tolak Pengajuan (Reject by Manager)
+  /// 5.10 Tolak Pengajuan (Reject by Manager)
   /// POST /api/requests/{id}/reject
   static Future<RequestApiResponse<void>> rejectRequest(
     int id, {
