@@ -1,168 +1,298 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../auth/presentation/login_screen.dart';
+import '../../auth/data/auth_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final data = await AuthService.getUserData();
+    if (mounted) {
+      setState(() {
+        _userData = data;
+        _isLoading = false;
+      });
+    }
+  }
+
+  bool _isRefreshingOverlay = false;
+
+  Future<void> _refreshData() async {
+    setState(() {
+      _isRefreshingOverlay = true;
+    });
+    await Future.wait([
+      _loadUserData(),
+      Future.delayed(const Duration(seconds: 1)),
+    ]);
+    if (mounted) {
+      setState(() {
+        _isRefreshingOverlay = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text('Profil Saya', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildProfileHeader(context),
-          const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Akun & Keamanan'),
-          const SizedBox(height: 12),
-          _buildMenuCard(
-            children: [
-              _buildMenuItem(context, Icons.lock_outline, 'Ubah Kata Sandi', onTap: () {}),
-              _buildDivider(),
-              _buildMenuItem(
-                context,
-                Icons.fingerprint,
-                'Autentikasi Biometrik',
-                trailing: Switch(
-                  value: true,
-                  onChanged: (v) {},
-                  activeColor: AppColors.primary,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+      backgroundColor: AppColors.surfaceContainerLowest,
+      body: _isLoading 
+          ? const Center(child: SpinKitFadingCube(color: AppColors.primary, size: 50.0))
+          : Stack(
+              children: [
+                RefreshIndicator(
+                  color: Colors.transparent,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildProfileHeader(context),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildSectionTitle(context, 'Akun & Keamanan'),
+                        const SizedBox(height: 10),
+                        _buildMenuCard(
+                          children: [
+                            _buildMenuItem(context, Icons.lock_outline, 'Ubah Kata Sandi', onTap: () {}),
+                            _buildDivider(),
+                            _buildMenuItem(
+                              context,
+                              Icons.fingerprint,
+                              'Autentikasi Biometrik',
+                              trailing: Switch(
+                                value: true,
+                                onChanged: (v) {},
+                                activeColor: AppColors.primary,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        _buildSectionTitle(context, 'Pengaturan Aplikasi'),
+                        const SizedBox(height: 10),
+                        _buildMenuCard(
+                          children: [
+                            _buildMenuItem(context, Icons.notifications_none, 'Notifikasi', onTap: () {}),
+                            _buildDivider(),
+                            _buildMenuItem(
+                              context,
+                              Icons.language,
+                              'Bahasa',
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('Indonesia', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.chevron_right, color: AppColors.outline, size: 18),
+                                ],
+                              ),
+                              onTap: () {},
+                            ),
+                            _buildDivider(),
+                            _buildMenuItem(
+                              context,
+                              Icons.dark_mode_outlined,
+                              'Mode Gelap',
+                              trailing: Switch(
+                                value: false,
+                                onChanged: (v) {},
+                                activeColor: AppColors.primary,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        _buildSectionTitle(context, 'Bantuan & Info'),
+                        const SizedBox(height: 10),
+                        _buildMenuCard(
+                          children: [
+                            _buildMenuItem(context, Icons.help_outline, 'Pusat Bantuan', onTap: () {}),
+                            _buildDivider(),
+                            _buildMenuItem(context, Icons.description_outlined, 'Syarat & Ketentuan', onTap: () {}),
+                            _buildDivider(),
+                            _buildMenuItem(context, Icons.info_outline, 'Versi Aplikasi', trailing: Text('1.0.0', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant))),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await AuthService.logout();
+                            if (context.mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                (route) => false,
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.logout, size: 18),
+                          label: const Text('Keluar dari Akun'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Pengaturan Aplikasi'),
-          const SizedBox(height: 12),
-          _buildMenuCard(
-            children: [
-              _buildMenuItem(context, Icons.notifications_none, 'Notifikasi', onTap: () {}),
-              _buildDivider(),
-              _buildMenuItem(
-                context,
-                Icons.language,
-                'Bahasa',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Indonesia', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary)),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right, color: AppColors.outline, size: 20),
-                  ],
-                ),
-                onTap: () {},
-              ),
-              _buildDivider(),
-              _buildMenuItem(
-                context,
-                Icons.dark_mode_outlined,
-                'Mode Gelap',
-                trailing: Switch(
-                  value: false,
-                  onChanged: (v) {},
-                  activeColor: AppColors.primary,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Bantuan & Info'),
-          const SizedBox(height: 12),
-          _buildMenuCard(
-            children: [
-              _buildMenuItem(context, Icons.help_outline, 'Pusat Bantuan', onTap: () {}),
-              _buildDivider(),
-              _buildMenuItem(context, Icons.description_outlined, 'Syarat & Ketentuan', onTap: () {}),
-              _buildDivider(),
-              _buildMenuItem(context, Icons.info_outline, 'Versi Aplikasi', trailing: Text('1.0.0 (Build 12)', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant))),
-            ],
-          ),
-          const SizedBox(height: 32),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.logout),
-            label: const Text('Keluar dari Akun'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorContainer,
-              foregroundColor: AppColors.error,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
             ),
           ),
-          const SizedBox(height: 32),
-        ],
-      ),
+          if (_isRefreshingOverlay)
+                  Positioned.fill(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        child: const Center(
+                          child: SpinKitFadingCube(color: AppColors.primary, size: 50.0),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 
   Widget _buildProfileHeader(BuildContext context) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primaryContainer, width: 4),
-                image: const DecorationImage(
-                  image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuB0Q-IMVSNKuWFtNzNPrDe5MMRdrwZL6lzcGQW5eh4A0YezhiNuo42Wy5rB_HhATSToWvxj_7JA35HiDHB0Mr0XJxp0Ry1KnqCnYDc2DsAJEbpVAU7OHPEE6FhgFX63QNIygT2iImmsUPEBOYaAg0EiBfcsF8yNdEyMbLNFzf1_qBrarDiPkewPslpzigw3p_ZRn3-pic1Tg924PKEcEntj4uAzhOZ1h42I9OEwCUTBF-dQMt-8LAA'),
-                  fit: BoxFit.cover,
+    final name = _userData?['name'] ?? 'Pengguna';
+    final role = _userData?['position'] ?? _userData?['role'] ?? 'Staff';
+    final identifier = _userData?['email'] ?? _userData?['nik'] ?? '-';
+    final photoUrl = _userData?['profile_photo_url'] ?? 
+        'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=0037b0&color=fff';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Title bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Profil',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white, size: 22),
+                onPressed: () {},
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Avatar + info row
+          Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 3),
+                ),
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundImage: NetworkImage(photoUrl),
+                  backgroundColor: Colors.white24,
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 2),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      role,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white60),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.email_outlined, size: 12, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              identifier,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Icon(Icons.camera_alt, size: 16, color: AppColors.onPrimary),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Reza Mahendra',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Senior Mobile Developer',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.primary),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
+            ],
           ),
-          child: Text(
-            'NIK: 2024010899',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.onSurface,
           ),
@@ -172,16 +302,9 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMenuCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: children,
@@ -200,30 +323,30 @@ class ProfileScreen extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, size: 20, color: AppColors.onSurfaceVariant),
+                child: Icon(icon, size: 18, color: AppColors.primary),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               if (trailing != null)
                 trailing
               else if (onTap != null)
-                const Icon(Icons.chevron_right, color: AppColors.outline, size: 20),
+                const Icon(Icons.chevron_right, color: AppColors.outline, size: 18),
             ],
           ),
         ),
@@ -236,7 +359,7 @@ class ProfileScreen extends StatelessWidget {
       height: 1,
       thickness: 1,
       color: AppColors.outlineVariant.withOpacity(0.3),
-      indent: 56, // Menyesuaikan dengan ikon menu
+      indent: 64, // Menyesuaikan dengan ikon menu
     );
   }
 }

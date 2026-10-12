@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../auth/presentation/login_screen.dart';
+import '../../auth/data/auth_service.dart';
 import '../../navigation/presentation/main_scaffold.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -9,7 +11,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -18,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     // Inisialisasi controller animasi dengan durasi 2 detik
     _controller = AnimationController(
       vsync: this,
@@ -53,17 +56,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward();
 
     // Timer untuk berpindah ke halaman utama setelah 3.5 detik
-    Future.delayed(const Duration(milliseconds: 3500), () {
+    Future.delayed(const Duration(milliseconds: 3500), () async {
+      bool isValid = await AuthService.checkProfile();
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 800),
-            pageBuilder: (_, __, ___) => const MainScaffold(),
+            pageBuilder:
+                (_, __, ___) =>
+                    isValid ? const MainScaffold() : const LoginScreen(),
             transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
+              return FadeTransition(opacity: animation, child: child);
             },
           ),
         );
@@ -122,19 +125,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     const SizedBox(height: 32),
                     Text(
                       'CENTRAL PORTAL',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2.5,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Corporate Management System',
+                      'One platform for Arqom services',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                            letterSpacing: 1.5,
-                          ),
+                        color: AppColors.onSurfaceVariant,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 64),
                     const SizedBox(

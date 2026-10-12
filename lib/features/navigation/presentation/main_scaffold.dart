@@ -4,6 +4,9 @@ import '../../attendance/presentation/attendance_screen.dart';
 import '../../performance/presentation/performance_screen.dart';
 import '../../requests/presentation/requests_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../../core/theme/app_colors.dart';
+
+import 'package:google_fonts/google_fonts.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -33,46 +36,66 @@ class _MainScaffoldState extends State<MainScaffold> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: AppColors.surfaceContainerLowest,
+          indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+          surfaceTintColor: Colors.transparent,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary);
+            }
+            return GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.onSurfaceVariant);
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: AppColors.primary, size: 26);
+            }
+            return const IconThemeData(color: AppColors.onSurfaceVariant, size: 24);
+          }),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Beranda',
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history_toggle_off_outlined),
-              activeIcon: Icon(Icons.history_toggle_off),
-              label: 'Kehadiran',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.insights_outlined),
-              activeIcon: Icon(Icons.insights),
-              label: 'Kinerja',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.event_available_outlined),
-              activeIcon: Icon(Icons.event_available),
-              label: 'Pengajuan',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
-            ),
-          ],
+          ),
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _onItemTapped,
+            height: 68,
+            elevation: 0,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Beranda',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.history_toggle_off_outlined),
+                selectedIcon: Icon(Icons.history_toggle_off),
+                label: 'Kehadiran',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.insights_outlined),
+                selectedIcon: Icon(Icons.insights),
+                label: 'Kinerja',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.event_available_outlined),
+                selectedIcon: Icon(Icons.event_available),
+                label: 'Pengajuan',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Profil',
+              ),
+            ],
+          ),
         ),
       ),
     );

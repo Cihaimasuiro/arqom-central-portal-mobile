@@ -1,201 +1,367 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/live_clock_widget.dart';
+import '../../auth/data/auth_service.dart';
+import '../../attendance/data/attendance_service.dart';
+import '../data/dashboard_service.dart';
+import '../data/models/activity.dart';
+import '../data/models/announcement.dart';
+import '../../worship/presentation/almatsurat_screen.dart';
+import '../../requests/presentation/dinas_luar_screen.dart';
+import '../../requests/presentation/izin_sakit_screen.dart';
+import '../../requests/presentation/cuti_tahunan_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
 
   const HomeScreen({super.key, this.onNavigateTab});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _userData;
+  List<Announcement> _announcements = [];
+  List<Activity> _activities = [];
+  bool _isLoadingDashboard = true;
+  bool _isLoadingAttendance = false;
+  Future<Map<String, dynamic>?>? _todayFuture;
+
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Layanan lokasi dinonaktifkan. Harap nyalakan GPS.'), backgroundColor: AppColors.error));
+      return null;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak.'), backgroundColor: AppColors.error));
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak secara permanen.'), backgroundColor: AppColors.error));
+      return null;
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal mendapatkan lokasi (Timeout). Pastikan GPS menyala dan sinyal stabil.'), backgroundColor: AppColors.error));
+      return null;
+    }
+  }
+
+  Future<File?> _takePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 50,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+    if (image != null) {
+      return File(image.path);
+    }
+    return null;
+  }
+
+  Future<void> _handleAttendance(bool isCheckIn) async {
+    if (!isCheckIn) {
+      final hour = DateTime.now().hour;
+      if (hour < 17) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Belum waktunya pulang. Anda baru bisa absen pulang setelah jam 17:00.'), backgroundColor: AppColors.error));
+        return;
+      }
+    }
+
+    setState(() { _isLoadingAttendance = true; });
+
+    try {
+      final position = await _getCurrentLocation();
+      if (position == null) {
+        setState(() { _isLoadingAttendance = false; });
+        return;
+      }
+
+      final todayData = await AttendanceService.getToday();
+      if (isCheckIn && todayData != null && todayData['check_in'] != null && todayData['check_in'] != '--:--') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Anda sudah absen masuk hari ini.'), backgroundColor: AppColors.primary),
+          );
+        }
+        setState(() { _isLoadingAttendance = false; });
+        return;
+      }
+
+      File? photo = await _takePhoto();
+      if (photo == null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto wajib diambil untuk absensi.'), backgroundColor: AppColors.error));
+        setState(() { _isLoadingAttendance = false; });
+        return;
+      }
+
+      final result = isCheckIn 
+          ? await AttendanceService.checkIn(position.latitude.toString(), position.longitude.toString(), photo)
+          : await AttendanceService.checkOut(position.latitude.toString(), position.longitude.toString(), photo);
+
+      if (mounted) {
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: AppColors.primary));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: AppColors.error));
+        }
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan. Coba lagi.'), backgroundColor: AppColors.error));
+    } finally {
+      if (mounted) {
+        setState(() { _isLoadingAttendance = false; });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _todayFuture = AttendanceService.getToday();
+    _loadUserData();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    final response = await DashboardService.getDashboardData();
+    if (mounted) {
+      setState(() {
+        if (response['success'] == true) {
+          _announcements = response['announcements'] as List<Announcement>;
+          _activities = response['activities'] as List<Activity>;
+        }
+        _isLoadingDashboard = false;
+      });
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final data = await AuthService.getUserData();
+    if (mounted) {
+      setState(() {
+        _userData = data;
+      });
+    }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat Pagi';
+    if (hour < 15) return 'Selamat Siang';
+    if (hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
+
+  bool _isRefreshingOverlay = false;
+
+  Future<void> _refreshData() async {
+    setState(() {
+      _isLoadingDashboard = true;
+      _isRefreshingOverlay = true;
+      _todayFuture = AttendanceService.getToday();
+    });
+    await Future.wait([
+      _loadUserData(),
+      _loadDashboardData(),
+    ]);
+    if (mounted) {
+      setState(() {
+        _isRefreshingOverlay = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + kToolbarHeight + 20, 16, 100), // Bottom padding for nav bar
-        child: Column(
+      backgroundColor: AppColors.surfaceContainerLowest,
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: Colors.transparent,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            onRefresh: _refreshData,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildProfileGreeting(context),
-            const SizedBox(height: 16),
-            _buildDailyQuote(context),
-            const SizedBox(height: 16),
-            _buildAttendanceStatus(context),
-            const SizedBox(height: 16),
-            _buildPendingApproval(context),
-            const SizedBox(height: 16),
-            _buildQuickAccess(context),
-            const SizedBox(height: 16),
-            _buildPerformanceSummary(context),
-            const SizedBox(height: 16),
-            _buildMeetingAgenda(context),
-            const SizedBox(height: 16),
-            _buildInternalAnnouncement(context),
+            _buildHeader(context),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildAttendanceCard(context),
+                  const SizedBox(height: 20),
+                  _buildQuickAccess(context),
+                  const SizedBox(height: 20),
+                  _buildPerformanceRow(context),
+                  const SizedBox(height: 20),
+                  _buildAgendaSection(context),
+                  const SizedBox(height: 20),
+                  _buildAnnouncementSection(context),
+                  const SizedBox(height: 20),
+                  _buildDailyQuote(context),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: AppBar(
-            backgroundColor: AppColors.surface.withOpacity(0.85),
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.black.withOpacity(0.04),
-                    width: 1,
+      ),
+          if (_isRefreshingOverlay)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  child: const Center(
+                    child: SpinKitFadingCube(color: AppColors.primary, size: 50.0),
                   ),
                 ),
               ),
             ),
-            title: Row(
-              children: [
-                Image.network(
-                  'https://lh3.googleusercontent.com/aida/AEtjO1UQ5FkFHc88tQwC2SjPZs73JEpqNHidwBKqTHwBm0x8z1Jb3pqe4PkR-nyuqVecTLhXJ8KDwLOXHepCs7JDDhGyJPyNbxMNiqGe4HbG8WfKgwuq_q1NDzL65Gd7eRGfmCsUzZARLuPiiIq2krQDXc1pjGuqXJt3bQBcMLqbkrfcFdZx8ZxetmKnrJqQ7JbRB692emYWPnXUPcgezu0PJDulMRWjB1iMdCwW9jsdRNJxRwyFlzFXJH_NAQ',
-                  height: 32,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.business, color: AppColors.primary),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CENTRAL PORTAL',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.primary,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    Text(
-                      'Beranda',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
+        ],
+      ),
+    );
+  }
+
+  // ─── HEADER ──────────────────────────────────────────────────────────
+  Widget _buildHeader(BuildContext context) {
+    final name = _userData?['name'] ?? 'Pengguna';
+    final firstName = name.split(' ').first;
+    final role = _userData?['position'] ?? _userData?['role'] ?? 'Staff';
+    final photoUrl = _userData?['profile_photo_url'] ??
+        'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=0037b0&color=fff';
+
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Top bar: logo + notifications
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Image.asset(
+                    'logo/favicon-removebg-preview.png',
+                    height: 24,
+                    color: Colors.white,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.business, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'ARQOM ONE',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
               IconButton(
                 icon: const Badge(
                   backgroundColor: AppColors.error,
                   smallSize: 8,
-                  child: Icon(Icons.notifications_none, color: AppColors.onSurfaceVariant),
+                  child: Icon(Icons.notifications_none, color: Colors.white, size: 22),
                 ),
                 onPressed: () {},
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0, left: 8),
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundImage: const NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCQaJC_jqiMNv49kn_uPFhMrLFxMpa3Qu3nY6nqMPw-N6uQ_jRmb97FIVoScHuTlylqtomh7l4_6GV1H0_OdpCyrYwYG2dBookxNmturNgp_b0H84d2FN1HQSenXM0FpqJ3JtkouZi7y009HZT5gX7i7rzRsyY2ohzMq5tjfKxlRScR-uyqZVzi5lVGkPJItshRl1DZBAumcAZrEykiEdf7mgKYmClyoFWpsTK2b0LHloUGG3t19UI'),
-                  backgroundColor: AppColors.primaryFixed,
-                  onBackgroundImageError: (_, __) {},
-                  child: const Icon(Icons.person, size: 20, color: AppColors.onPrimaryFixed),
-                ),
+                visualDensity: VisualDensity.compact,
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileGreeting(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              const CircleAvatar(
-                radius: 24,
-                backgroundImage: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuDk69nzXOWIZ_yXXDFx8386G1Z6Ph5S10LxEJnpkzu10gB78Hs89OZdfGtY_i8LHgP_W7N1KyIeE2WaQcAs_1m9k7JMvQaRlS5pNdWPQBfjqghEfpc16H2wgp1W5NeCtsH-uLJLQ_oUXz_Kck5VyGv63AI_XtMgT57Bbj-HfNAXZWPGZMKCAMEpzVqRnUqpuBIAgEej1IFBVzFi-YsNgV--EClZwS0FTKht7MiL9eTqrr_hwo2jUOM'),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Selamat Pagi, Rizky!', style: Theme.of(context).textTheme.headlineSmall),
-                Text(
-                  'Senior Product Designer • PT Nusantara',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          const SizedBox(height: 16),
+          // Profile row
+          Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.secondaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: 22,
+                  backgroundImage: NetworkImage(photoUrl),
+                  backgroundColor: Colors.white24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_getGreeting()}, $firstName',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      role,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white60),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'WFO Jakarta',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryContainer),
-                    ),
+                    const SizedBox(width: 5),
+                    Text('WFO', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white)),
                   ],
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '24 Okt 2024',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant),
               ),
             ],
           ),
@@ -204,619 +370,274 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceStatus(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'STATUS PRESENSI HARI INI',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'Belum Presensi Masuk',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.error),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryContainer.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.near_me, size: 16, color: AppColors.secondary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Radius Kantor (12m)',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryContainer),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Live Clock Widget
-            LiveClockWidget(
-              timeStyle: Theme.of(context).textTheme.displayLarge,
-              amPmStyle: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.onSurfaceVariant),
-            ),
-            Text(
-              'Batas toleransi masuk: 08:45 WIB',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.surfaceTint],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {},
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.fingerprint, color: AppColors.onPrimary, size: 20),
-                              const SizedBox(width: 8),
-                              Text('Masuk Kerja', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.onPrimary)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.surfaceContainerHigh,
-                      foregroundColor: AppColors.outline,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Pulang'),
-                    onPressed: null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildPastAttendanceInfo(context, Icons.login, AppColors.secondary, 'Kemarin Masuk', '08:24 WIB'),
-                  Container(width: 1, height: 24, color: AppColors.outlineVariant.withOpacity(0.5)),
-                  _buildPastAttendanceInfo(context, Icons.logout, AppColors.onSurfaceVariant, 'Kemarin Pulang', '17:32 WIB'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ─── ATTENDANCE CARD ─────────────────────────────────────────────────
+  Widget _buildAttendanceCard(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _todayFuture,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final bool isCheckedIn = data != null && data['check_in'] != null && data['check_in'] != '--:--';
+        
+        final String statusText = isCheckedIn ? 'Sudah Presensi Masuk' : 'Belum Presensi';
+        final Color statusColor = isCheckedIn ? AppColors.secondary : AppColors.error;
+        final Color statusBgColor = isCheckedIn ? AppColors.secondaryContainer.withOpacity(0.5) : AppColors.errorContainer.withOpacity(0.5);
 
-  Widget _buildPastAttendanceInfo(BuildContext context, IconData icon, Color iconColor, String label, String time) {
-    return Expanded(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: iconColor),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-                Text(time, style: Theme.of(context).textTheme.titleSmall, overflow: TextOverflow.ellipsis),
-              ],
-            ),
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPendingApproval(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorContainer.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.errorContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.pending_actions, color: AppColors.onErrorContainer),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'MENUNGGU PERSETUJUAN',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onErrorContainer),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '1 Tiket',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onErrorContainer),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Cuti Tahunan (28 Okt 2024) • Review Manager',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAccess(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Akses Cepat Layanan', style: Theme.of(context).textTheme.titleMedium),
-                Text(
-                  '8 Fitur Utama',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            GridView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 8,
-                mainAxisExtent: 92,
-              ),
-              children: [
-                _buildQuickActionItem(
-                  context,
-                  Icons.history_toggle_off,
-                  'Kehadiran',
-                  AppColors.primaryFixed,
-                  AppColors.primary,
-                  onTap: () {
-                    if (onNavigateTab != null) {
-                      onNavigateTab!(1); // Index 1 is Kehadiran tab
-                    }
-                  },
-                ),
-                _buildQuickActionItem(context, Icons.menu_book, 'Logbook', AppColors.secondaryFixed, AppColors.secondary),
-                _buildQuickActionItem(context, Icons.flag, 'Rencana', AppColors.surfaceContainerHigh, AppColors.primaryContainer),
-                _buildQuickActionItem(
-                  context,
-                  Icons.event_available,
-                  'Pengajuan',
-                  AppColors.errorContainer.withOpacity(0.6),
-                  AppColors.error,
-                  onTap: () {
-                    if (onNavigateTab != null) {
-                      onNavigateTab!(3); // Index 3 is Pengajuan tab
-                    }
-                  },
-                ),
-                _buildQuickActionItem(context, Icons.flight_takeoff, 'Dinas Luar', AppColors.tertiaryFixed, AppColors.tertiary),
-                _buildQuickActionItem(context, Icons.folder_special, 'SOP & Arsip', AppColors.surfaceContainerHighest, AppColors.onSurfaceVariant),
-                _buildQuickActionItem(context, Icons.groups, 'Daftar Tim', AppColors.primaryFixedDim.withOpacity(0.4), AppColors.primary),
-                _buildQuickActionItem(context, Icons.apps, 'Lainnya', AppColors.surfaceContainer, AppColors.onSurface),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionItem(BuildContext context, IconData icon, String label, Color bgColor, Color iconColor, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap ?? () {},
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: iconColor),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(height: 1.2),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceSummary(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.insights, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Flexible(child: Text('Ringkasan Kinerja', style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Q4 2024',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondaryContainer),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Evaluasi KPI', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text('87.5', style: Theme.of(context).textTheme.titleLarge),
-                            const SizedBox(width: 4),
-                            Text('/ 100', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Sangat Baik',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Pencapaian OKR', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 4),
-                              Text('76%', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primary)),
-                              Text('Target: 80%', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 40,
-                              height: 40,
-                              child: CircularProgressIndicator(
-                                value: 0.76,
-                                strokeWidth: 4,
-                                backgroundColor: AppColors.surfaceContainerHighest,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            Text('Q4', style: Theme.of(context).textTheme.labelSmall),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Tugas Bulan Ini', style: Theme.of(context).textTheme.labelMedium),
-                      Text('18 / 24 Selesai (75%)', style: Theme.of(context).textTheme.labelMedium),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: 0.75,
-                    backgroundColor: AppColors.surfaceContainerHighest,
-                    color: AppColors.primary,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {},
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Lihat Analisis Lengkap'),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMeetingAgenda(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Flexible(child: Text('Agenda Rapat Terdekat', style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text('Hari Ini', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            children: [
+              // Status row
+              Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerHigh,
+                      color: statusBgColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Column(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('09:30', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.primary)),
-                        Text('10:30', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
+                        Container(width: 6, height: 6, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
+                        const SizedBox(width: 5),
+                        Text(statusText, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: statusColor, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Sprint Planning Q4 & Review OKR',
-                                style: Theme.of(context).textTheme.titleSmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Ruang Rinjani 302 • 6 Peserta Terkonfirmasi',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 60,
-                              height: 24,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    left: 0,
-                                    child: CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: AppColors.surface,
-                                      child: const CircleAvatar(radius: 11, backgroundImage: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuB0Q-IMVSNKuWFtNzNPrDe5MMRdrwZL6lzcGQW5eh4A0YezhiNuo42Wy5rB_HhATSToWvxj_7JA35HiDHB0Mr0XJxp0Ry1KnqCnYDc2DsAJEbpVAU7OHPEE6FhgFX63QNIygT2iImmsUPEBOYaAg0EiBfcsF8yNdEyMbLNFzf1_qBrarDiPkewPslpzigw3p_ZRn3-pic1Tg924PKEcEntj4uAzhOZ1h42I9OEwCUTBF-dQMt-8LAA')),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: 18,
-                                    child: CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: AppColors.surface,
-                                      child: const CircleAvatar(radius: 11, backgroundImage: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCpHnATzPtBicdFs9vkb6P78-Mxdi2hitTg88auKwcn41zq3yRfJsktyxaX4QZCB_xJEKnQXDm8EmlcqUoWzmMGi372DLv8pwt70ecGa1KX6TjL7CsKRvq3zls0piUfPYc6DNf3Yi_tY5JXPRCNsk_XKMv5P4wbeRmw9QBMnxPpcO5bAHptGZfkIg7AR9VY6mQ0yYTV9QokBzZCENzEIFkFg-HMcz9YmGiZVC6oz7gQ1LZHwOZoTfg')),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: 36,
-                                    child: CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: AppColors.surface,
-                                      child: CircleAvatar(
-                                        radius: 11,
-                                        backgroundColor: AppColors.surfaceContainerHighest,
-                                        child: Text('+4', style: Theme.of(context).textTheme.labelSmall),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'Ruang Rinjani 302',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary),
-                            ),
-                          ],
-                        ),
-                      ],
+              const Spacer(),
+              Text('Batas: 08:15 WIB', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Clock
+          LiveClockWidget(
+            timeStyle: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold, color: AppColors.onSurface),
+            amPmStyle: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          // Buttons
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: _isLoadingAttendance && true // just to show loading indicator if we want, but usually better to disable
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.login, size: 18),
+                  label: const Text('Masuk Kerja'),
+                  onPressed: _isLoadingAttendance ? null : () => _handleAttendance(true),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.surfaceContainerHigh,
+                    foregroundColor: AppColors.onSurfaceVariant,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Pulang'),
+                  onPressed: (_isLoadingAttendance || DateTime.now().hour < 17) ? null : () => _handleAttendance(false),
+                ),
+              ),
+            ],
+          ),
+          ],
+        ),
+      );
+      },
+    );
+  }
+
+  // ─── QUICK ACCESS ────────────────────────────────────────────────────
+  Widget _buildQuickAccess(BuildContext context) {
+    final items = [
+      _QuickItem(Icons.history_toggle_off, 'Kehadiran', () { widget.onNavigateTab?.call(1); }),
+      _QuickItem(Icons.event_available, 'Pengajuan', () { widget.onNavigateTab?.call(3); }),
+      _QuickItem(Icons.flight_takeoff, 'Dinas Luar', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DinasLuarScreen()));
+      }),
+      _QuickItem(Icons.sick, 'Sakit/Izin', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IzinSakitScreen()));
+      }),
+      _QuickItem(Icons.auto_stories, 'Al-Ma\'tsurat', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AlmatsuratScreen()));
+      }),
+      _QuickItem(Icons.beach_access, 'Cuti', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CutiTahunanScreen()));
+      }),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Akses Cepat', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: items.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 4,
+            mainAxisExtent: 76,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return InkWell(
+              onTap: item.onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Icon(item.icon, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500, fontSize: 10),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ─── PERFORMANCE ROW ─────────────────────────────────────────────────
+  Widget _buildPerformanceRow(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'Kinerja', 'Q4 2024', actionLabel: 'Detail', onTapAction: () {}),
+        const SizedBox(height: 10),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildMetricTile(context, 'KPI', '87.5', 'Sangat Baik', AppColors.secondary)),
+              const SizedBox(width: 10),
+              Expanded(child: _buildMetricTile(context, 'OKR', '76%', 'Target: 80%', AppColors.primary)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricTile(BuildContext context, String label, String value, String subtext, Color accent) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
+          const SizedBox(height: 6),
+          Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(subtext, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accent, fontWeight: FontWeight.w600, fontSize: 10)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AGENDA SECTION ──────────────────────────────────────────────────
+  Widget _buildAgendaSection(BuildContext context) {
+    if (_isLoadingDashboard) {
+      return _buildShimmerPlaceholder(context, 'Agenda');
+    }
+    if (_activities.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'Agenda Mendatang', '${_activities.length} kegiatan'),
+        const SizedBox(height: 10),
+        ..._activities.take(3).map((a) => _buildAgendaItem(context, a)),
+      ],
+    );
+  }
+
+  Widget _buildAgendaItem(BuildContext context, Activity activity) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 36,
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(activity.title, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${activity.location} · ${activity.pic}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant, fontSize: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                activity.activityDate.length >= 10 ? activity.activityDate.substring(5, 10).replaceAll('-', '/') : activity.activityDate,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 10),
               ),
             ),
           ],
@@ -825,71 +646,60 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInternalAnnouncement(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+  // ─── ANNOUNCEMENT SECTION ────────────────────────────────────────────
+  Widget _buildAnnouncementSection(BuildContext context) {
+    if (_isLoadingDashboard) return const SizedBox.shrink();
+    if (_announcements.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'Pengumuman', 'Informasi Internal'),
+        const SizedBox(height: 10),
+        ..._announcements.take(3).map((a) => _buildAnnouncementItem(context, a)),
+      ],
+    );
+  }
+
+  Widget _buildAnnouncementItem(BuildContext context, Announcement announcement) {
+    final isUrgent = announcement.priority.toLowerCase() == 'urgent';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isUrgent ? AppColors.error.withOpacity(0.3) : AppColors.outlineVariant.withOpacity(0.4)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.campaign, color: AppColors.secondary, size: 20),
-                      const SizedBox(width: 8),
-                      Flexible(child: Text('Pengumuman Internal', style: Theme.of(context).textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text('Semua', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary)),
-              ],
-            ),
-            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
+                color: isUrgent ? AppColors.errorContainer.withOpacity(0.5) : AppColors.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(
+                isUrgent ? Icons.warning_amber_rounded : Icons.campaign_outlined,
+                size: 18,
+                color: isUrgent ? AppColors.error : AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryFixed,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text('Penting', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onPrimaryFixed)),
-                      ),
-                      Text('Management Office', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Townhall Triwulan IV & Sosialisasi Kebijakan Kerja Terpadu 2025', style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 4),
+                  Text(announcement.title, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
                   Text(
-                    'Seluruh staf PT Nusantara Teknologi Mandiri diundang menghadiri sesi hybrid interaktif mengenai pencapaian bisnis dan peresmian skema tunjangan baru.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+                    announcement.description,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant, fontSize: 10),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(child: Text('Jumat, 25 Okt • Auditorium Lt. 4', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
-                      const SizedBox(width: 8),
-                      Text('Lihat Detail', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary)),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -899,35 +709,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ─── DAILY QUOTE ─────────────────────────────────────────────────────
   static const List<Map<String, String>> _dailyQuotes = [
-    {
-      'text': 'Maka sesungguhnya bersama kesulitan ada kemudahan.',
-      'source': 'QS. Al-Insyirah: 5'
-    },
-    {
-      'text': 'Dan bersabarlah, karena sesungguhnya Allah tidak menyia-nyiakan pahala orang yang berbuat kebaikan.',
-      'source': 'QS. Hud: 115'
-    },
-    {
-      'text': 'Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.',
-      'source': 'QS. Al-Baqarah: 286'
-    },
-    {
-      'text': 'Boleh jadi kamu membenci sesuatu, padahal ia amat baik bagimu.',
-      'source': 'QS. Al-Baqarah: 216'
-    },
-    {
-      'text': 'Sesungguhnya Allah beserta orang-orang yang sabar.',
-      'source': 'QS. Al-Baqarah: 153'
-    },
-    {
-      'text': 'Maka nikmat Tuhan kamu yang manakah yang kamu dustakan?',
-      'source': 'QS. Ar-Rahman: 13'
-    },
-    {
-      'text': 'Barangsiapa bertakwa kepada Allah niscaya Dia akan membukakan jalan keluar baginya.',
-      'source': 'QS. At-Talaq: 2'
-    },
+    {'text': 'Maka sesungguhnya bersama kesulitan ada kemudahan.', 'source': 'QS. Al-Insyirah: 5'},
+    {'text': 'Dan bersabarlah, karena sesungguhnya Allah tidak menyia-nyiakan pahala orang yang berbuat kebaikan.', 'source': 'QS. Hud: 115'},
+    {'text': 'Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.', 'source': 'QS. Al-Baqarah: 286'},
+    {'text': 'Boleh jadi kamu membenci sesuatu, padahal ia amat baik bagimu.', 'source': 'QS. Al-Baqarah: 216'},
+    {'text': 'Sesungguhnya Allah beserta orang-orang yang sabar.', 'source': 'QS. Al-Baqarah: 153'},
+    {'text': 'Maka nikmat Tuhan kamu yang manakah yang kamu dustakan?', 'source': 'QS. Ar-Rahman: 13'},
+    {'text': 'Barangsiapa bertakwa kepada Allah niscaya Dia akan membukakan jalan keluar baginya.', 'source': 'QS. At-Talaq: 2'},
   ];
 
   Widget _buildDailyQuote(BuildContext context) {
@@ -939,44 +729,77 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.format_quote_rounded, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text('Kutipan Hari Ini', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.primary)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '"${quote['text']}"',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: AppColors.onSurfaceVariant,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '- ${quote['source']}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.outline),
+          Icon(Icons.format_quote, color: AppColors.primary.withOpacity(0.3), size: 28),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  quote['text']!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '— ${quote['source']}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.outline, fontSize: 10),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  // ─── SHARED HELPERS ──────────────────────────────────────────────────
+  Widget _buildSectionHeader(BuildContext context, String title, String subtitle, {VoidCallback? onTapAction, String? actionLabel}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
+            ],
+          ),
+        ),
+        if (onTapAction != null && actionLabel != null)
+          GestureDetector(
+            onTap: onTapAction,
+            child: Text(actionLabel, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerPlaceholder(BuildContext context, String label) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text('Memuat $label...', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariant)),
+      ),
+    );
+  }
+}
+
+// Simple data class for quick access items
+class _QuickItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _QuickItem(this.icon, this.label, this.onTap);
 }
