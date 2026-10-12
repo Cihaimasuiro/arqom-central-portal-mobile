@@ -411,23 +411,29 @@ class _RequestsScreenState extends State<RequestsScreen> {
               const SizedBox(height: 14),
 
               // Waktu & Tanggal
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 4,
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    item.endDate != null && item.endDate != item.startDate
-                        ? '${item.startDate} s/d ${item.endDate}'
-                        : item.startDate,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        item.endDate != null && item.endDate != item.startDate
+                            ? '${item.startDate} s/d ${item.endDate}'
+                            : item.startDate,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                  if (item.startTime != null && item.endTime != null) ...[
-                    const SizedBox(width: 8),
+                  if (item.startTime != null && item.endTime != null)
                     Text(
                       '(${item.startTime} - ${item.endTime})',
                       style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
                     ),
-                  ],
                 ],
               ),
 
@@ -437,7 +443,13 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   children: [
                     const Icon(Icons.location_on_outlined, size: 14, color: AppColors.tertiary),
                     const SizedBox(width: 6),
-                    Text(item.location!, style: const TextStyle(fontSize: 12)),
+                    Expanded(
+                      child: Text(
+                        item.location!,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -445,9 +457,11 @@ class _RequestsScreenState extends State<RequestsScreen> {
               // Tipe Waktu & Peserta Chips
               if (item.parsedDetails?.tipeWaktu != null || item.parsedDetails?.tipePeserta != null) ...[
                 const SizedBox(height: 10),
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
-                    if (item.parsedDetails?.tipeWaktu != null) ...[
+                    if (item.parsedDetails?.tipeWaktu != null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -466,9 +480,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (item.parsedDetails?.tipePeserta != null) ...[
+                    if (item.parsedDetails?.tipePeserta != null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -487,7 +499,6 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           ],
                         ),
                       ),
-                    ],
                   ],
                 ),
               ],
@@ -668,13 +679,18 @@ class _RequestsScreenState extends State<RequestsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Pengajuan & Izin',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Expanded(
+                child: Text(
+                  'Pengajuan & Izin',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -742,12 +758,16 @@ class _RequestsScreenState extends State<RequestsScreen> {
                       color: _selectedMainTab == 0 ? AppColors.primary : AppColors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'Pengajuan Saya',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: _selectedMainTab == 0 ? FontWeight.bold : FontWeight.w500,
-                        color: _selectedMainTab == 0 ? AppColors.primary : AppColors.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        'Pengajuan Saya',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: _selectedMainTab == 0 ? FontWeight.bold : FontWeight.w500,
+                          color: _selectedMainTab == 0 ? AppColors.primary : AppColors.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -783,12 +803,16 @@ class _RequestsScreenState extends State<RequestsScreen> {
                       color: _selectedMainTab == 1 ? AppColors.primary : AppColors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'Perlu Persetujuan',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: _selectedMainTab == 1 ? FontWeight.bold : FontWeight.w500,
-                        color: _selectedMainTab == 1 ? AppColors.primary : AppColors.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        'Perlu Persetujuan',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: _selectedMainTab == 1 ? FontWeight.bold : FontWeight.w500,
+                          color: _selectedMainTab == 1 ? AppColors.primary : AppColors.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (_pendingApprovals.isNotEmpty) ...[
@@ -825,11 +849,16 @@ class _RequestsScreenState extends State<RequestsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Buat Pengajuan Baru',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            Expanded(
+              child: Text(
+                'Buat Pengajuan Baru',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            if (role != null && role.isNotEmpty)
+            if (role != null && role.isNotEmpty) ...[
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -845,6 +874,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   ),
                 ),
               ),
+            ],
           ],
         ),
         const SizedBox(height: 12),
@@ -1217,23 +1247,29 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
-                        const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.endDate != null && item.endDate != item.startDate
-                              ? '${item.startDate} s/d ${item.endDate}'
-                              : item.startDate,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              item.endDate != null && item.endDate != item.startDate
+                                  ? '${item.startDate} s/d ${item.endDate}'
+                                  : item.startDate,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
-                        if (item.startTime != null && item.endTime != null) ...[
-                          const SizedBox(width: 8),
+                        if (item.startTime != null && item.endTime != null)
                           Text(
                             '(${item.startTime} - ${item.endTime})',
                             style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
                           ),
-                        ],
                       ],
                     ),
                     if (item.location != null && item.location!.isNotEmpty) ...[
@@ -1242,18 +1278,23 @@ class _RequestsScreenState extends State<RequestsScreen> {
                         children: [
                           const Icon(Icons.location_on_outlined, size: 13, color: AppColors.tertiary),
                           const SizedBox(width: 6),
-                          Text(
-                            item.location!,
-                            style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                          Expanded(
+                            child: Text(
+                              item.location!,
+                              style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
                     ],
                     if (item.parsedDetails?.tipePeserta != null || item.parsedDetails?.tipeWaktu != null) ...[
                       const SizedBox(height: 6),
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
-                          if (item.parsedDetails?.tipeWaktu != null) ...[
+                          if (item.parsedDetails?.tipeWaktu != null)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
@@ -1265,9 +1306,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                 style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                          ],
-                          if (item.parsedDetails?.tipePeserta != null) ...[
+                          if (item.parsedDetails?.tipePeserta != null)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
@@ -1281,7 +1320,6 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                 style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant),
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ],
@@ -1437,7 +1475,14 @@ class _RequestsScreenState extends State<RequestsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(role, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Text(
+                      role,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
                 ],
               ),
@@ -1568,7 +1613,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Icon(Icons.calendar_month, size: 13, color: AppColors.primary),
                       const SizedBox(width: 6),

@@ -230,10 +230,15 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Pilih Pegawai Peserta Dinas',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      const Expanded(
+                        child: Text(
+                          'Pilih Pegawai Peserta Dinas',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -695,12 +700,16 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
           children: [
             Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.onSurfaceVariant),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.onSurface,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : AppColors.onSurface,
+                ),
               ),
             ),
           ],
