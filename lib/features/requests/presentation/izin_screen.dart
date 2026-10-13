@@ -5,20 +5,20 @@ import '../../../core/theme/app_colors.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
-class IzinSakitScreen extends StatefulWidget {
-  const IzinSakitScreen({super.key});
+class IzinScreen extends StatefulWidget {
+  const IzinScreen({super.key});
 
   @override
-  State<IzinSakitScreen> createState() => _IzinSakitScreenState();
+  State<IzinScreen> createState() => _IzinScreenState();
 }
 
-class _IzinSakitScreenState extends State<IzinSakitScreen> {
+class _IzinScreenState extends State<IzinScreen> {
   final _formKey = GlobalKey<FormState>();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String? _selectedCategory = 'Sakit';
+  String _selectedCategory = 'Izin Keperluan Pribadi';
   File? _attachmentFile;
   String? _selectedFileName;
   bool _isLoading = false;
@@ -26,7 +26,12 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  final List<String> _izinTypes = ['Sakit', 'Izin Keperluan Keluarga', 'Izin Lainnya'];
+  final List<String> _izinTypes = [
+    'Izin Keperluan Pribadi',
+    'Izin Keperluan Keluarga',
+    'Izin Kedukaan / Khusus',
+    'Izin Lainnya',
+  ];
 
   @override
   void dispose() {
@@ -44,21 +49,17 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih tanggal mulai')),
+        const SnackBar(content: Text('Pilih tanggal mulai izin')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final reqType = (_selectedCategory == 'Sakit') ? 'sakit' : 'izin';
-    String desc = _descriptionController.text.trim();
-    if (_selectedCategory != 'Sakit') {
-      desc = '[$_selectedCategory] $desc';
-    }
+    final desc = '[$_selectedCategory] ${_descriptionController.text.trim()}';
 
     final res = await RequestsService.createRequest(
-      requestType: reqType,
+      requestType: 'izin',
       description: desc,
       startDate: _formatDateYmd(_startDate!),
       endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
@@ -87,7 +88,7 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Pengajuan Sakit/Izin',
+          'Pengajuan Izin',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceContainerLowest,
@@ -101,12 +102,13 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildDropdown('Jenis Pengajuan', _selectedCategory, _izinTypes, (val) {
-                setState(() {
-                  _selectedCategory = val;
-                });
+              _buildDropdown('Kategori Izin', _selectedCategory, _izinTypes, (val) {
+                if (val != null) {
+                  setState(() => _selectedCategory = val);
+                }
               }),
               const SizedBox(height: 20),
+
               Row(
                 children: [
                   Expanded(
@@ -137,18 +139,21 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                 ],
               ),
               const SizedBox(height: 20),
+
               _buildInputField(
-                'Keterangan / Alasan',
-                'Jelaskan alasan secara singkat',
+                'Alasan / Keperluan Izin',
+                'Jelaskan alasan izin secara jelas dan lengkap',
                 _descriptionController,
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
+
               Text(
-                _selectedCategory == 'Sakit' ? 'Lampiran Surat Dokter (Opsional)' : 'Lampiran Pendukung (Opsional)',
+                'Dokumen Pendukung (Opsional)',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
+
               InkWell(
                 onTap: () async {
                   FilePickerResult? result = await FilePicker.pickFiles(
@@ -168,9 +173,9 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _selectedFileName != null ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
+                    color: _selectedFileName != null ? AppColors.secondary.withValues(alpha: 0.05) : AppColors.surface,
                     border: Border.all(
-                      color: _selectedFileName != null ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.5),
+                      color: _selectedFileName != null ? AppColors.secondary : AppColors.outlineVariant.withValues(alpha: 0.5),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -178,14 +183,14 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                     children: [
                       Icon(
                         _selectedFileName != null ? Icons.check_circle : Icons.upload_file,
-                        color: AppColors.primary,
+                        color: _selectedFileName != null ? Colors.green : AppColors.secondary,
                         size: 32,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _selectedFileName ?? 'Ketuk untuk mengunggah surat/lampiran (Maks 2MB)',
+                        _selectedFileName ?? 'Ketuk untuk mengunggah dokumen pendukung (Maks 2MB)',
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: AppColors.primary,
+                              color: _selectedFileName != null ? Colors.green : AppColors.secondary,
                               fontWeight: FontWeight.bold,
                             ),
                         textAlign: TextAlign.center,
@@ -200,6 +205,7 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
@@ -215,7 +221,7 @@ class _IzinSakitScreenState extends State<IzinSakitScreen> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : const Text('Kirim Pengajuan Izin', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

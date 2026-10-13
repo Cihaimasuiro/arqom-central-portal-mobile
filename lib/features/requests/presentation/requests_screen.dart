@@ -3,7 +3,8 @@ import '../../../core/theme/app_colors.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'cuti_tahunan_screen.dart';
-import 'izin_sakit_screen.dart';
+import 'izin_screen.dart';
+import 'sakit_screen.dart';
 import 'dinas_luar_screen.dart';
 import 'kerja_lembur_screen.dart';
 
@@ -877,6 +878,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
           ],
         ),
         const SizedBox(height: 12),
+        // Row 1: Pengajuan Umum (Cuti, Izin, Sakit)
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -895,18 +897,37 @@ class _RequestsScreenState extends State<RequestsScreen> {
               Expanded(
                 child: _buildCategoryButton(
                   context,
-                  'Sakit & Izin',
-                  Icons.medical_services_rounded,
-                  AppColors.errorContainer.withValues(alpha: 0.4),
-                  AppColors.error,
-                  onTap: () => _openForm(const IzinSakitScreen()),
+                  'Izin',
+                  Icons.event_note_rounded,
+                  AppColors.secondaryContainer.withValues(alpha: 0.4),
+                  AppColors.secondary,
+                  onTap: () => _openForm(const IzinScreen()),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildCategoryButton(
                   context,
-                  'Dinas Luar',
+                  'Sakit',
+                  Icons.medical_services_rounded,
+                  AppColors.errorContainer.withValues(alpha: 0.4),
+                  AppColors.error,
+                  onTap: () => _openForm(const SakitScreen()),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Row 2: Pengajuan Khusus / Operasional (Dinas Luar, Lembur)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildCategoryButton(
+                  context,
+                  'Perjalanan Dinas',
                   Icons.flight_takeoff_rounded,
                   canElevated ? AppColors.tertiaryContainer.withValues(alpha: 0.4) : Colors.grey.shade100,
                   canElevated ? AppColors.tertiary : Colors.grey.shade400,
@@ -920,7 +941,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
               Expanded(
                 child: _buildCategoryButton(
                   context,
-                  'Lembur',
+                  'Kerja Lembur',
                   Icons.access_time_filled_rounded,
                   canElevated ? Colors.indigo.withValues(alpha: 0.12) : Colors.grey.shade100,
                   canElevated ? Colors.indigo : Colors.grey.shade400,
