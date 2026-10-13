@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/data/auth_service.dart';
 
@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
       body: _isLoading 
-          ? const Center(child: SpinKitFadingCube(color: AppColors.primary, size: 50.0))
+          ? const Center(child: ArtechLoadingWidget(size: 84, message: 'Memuat profil...'))
           : Stack(
               children: [
                 RefreshIndicator(
@@ -174,7 +174,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Container(
                         color: Colors.black.withValues(alpha: 0.1),
                         child: const Center(
-                          child: SpinKitFadingCube(color: AppColors.primary, size: 50.0),
+                          child: ArtechLoadingWidget(
+                            size: 84,
+                            message: 'Memperbarui profil...',
+                          ),
                         ),
                       ),
                     ),

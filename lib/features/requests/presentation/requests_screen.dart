@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'cuti_tahunan_screen.dart';
@@ -1153,7 +1154,10 @@ class _RequestsScreenState extends State<RequestsScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 40),
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: ArtechLoadingWidget(
+            size: 80,
+            message: 'Memuat daftar pengajuan...',
+          ),
         ),
       );
     }
@@ -1583,7 +1587,10 @@ class _RequestsScreenState extends State<RequestsScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 40),
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: ArtechLoadingWidget(
+            size: 80,
+            message: 'Memuat daftar persetujuan...',
+          ),
         ),
       );
     }

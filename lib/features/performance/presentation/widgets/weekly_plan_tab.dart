@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/artech_loading_widget.dart';
 import '../../data/models/performance_models.dart';
 import '../../data/performance_service.dart';
 import 'weekly_plan_form_modal.dart';
@@ -178,7 +179,10 @@ class _WeeklyPlanTabState extends State<WeeklyPlanTab> {
           const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
-              child: CircularProgressIndicator(color: AppColors.primary),
+              child: ArtechLoadingWidget(
+                size: 76,
+                message: 'Memuat rencana mingguan...',
+              ),
             ),
           )
         else if (_errorMessage != null)

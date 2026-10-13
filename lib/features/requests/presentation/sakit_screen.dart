@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
@@ -250,11 +251,7 @@ class _SakitScreenState extends State<SakitScreen> {
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
+                    ? const ArtechLoadingWidget.small(size: 24)
                     : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Sakit', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],

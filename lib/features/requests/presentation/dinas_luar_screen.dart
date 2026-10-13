@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
@@ -576,7 +577,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   ),
                   child: const Row(
                     children: [
-                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                      ArtechLoadingWidget.small(size: 18),
                       SizedBox(width: 10),
                       Text('Memuat daftar pegawai...', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant)),
                     ],
@@ -805,11 +806,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
+                    ? const ArtechLoadingWidget.small(size: 24)
                     : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Dinas', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],

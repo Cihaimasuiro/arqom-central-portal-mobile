@@ -3,6 +3,7 @@ import '../../auth/presentation/login_screen.dart';
 import '../../auth/data/auth_service.dart';
 import '../../navigation/presentation/main_scaffold.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -142,14 +143,9 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 64),
-                    const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                        strokeWidth: 3,
-                        strokeCap: StrokeCap.round,
-                      ),
+                    const ArtechLoadingWidget(
+                      size: 64,
+                      showHalo: true,
                     ),
                   ],
                 ),

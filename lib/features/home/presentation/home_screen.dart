@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../../../core/widgets/live_clock_widget.dart';
 import '../../auth/data/auth_service.dart';
 import '../../attendance/data/attendance_service.dart';
@@ -242,7 +242,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.1),
                   child: const Center(
-                    child: SpinKitFadingCube(color: AppColors.primary, size: 50.0),
+                    child: ArtechLoadingWidget(
+                      size: 84,
+                      message: 'Memperbarui data...',
+                    ),
                   ),
                 ),
               ),

@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/artech_loading_widget.dart';
 import '../../../core/widgets/live_clock_widget.dart';
 import '../../requests/presentation/izin_screen.dart';
 import '../data/attendance_service.dart';
@@ -125,7 +124,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.1),
                   child: const Center(
-                    child: SpinKitFadingCube(color: AppColors.primary, size: 50.0),
+                    child: ArtechLoadingWidget(
+                      size: 84,
+                      message: 'Memperbarui data presensi...',
+                    ),
                   ),
                 ),
               ),
@@ -568,7 +570,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           future: _summaryFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+              return const Center(child: Padding(padding: EdgeInsets.all(20), child: ArtechLoadingWidget(size: 64)));
             }
             final summaryData = snapshot.data?['summary'] ?? {'present': 0, 'late': 0, 'leave': 0, 'absent': 0};
             return GridView.count(
@@ -663,7 +665,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 future: _summaryFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: ArtechLoadingWidget(size: 64));
                   }
                   final calendarData = snapshot.data?['calendar'] as List<dynamic>? ?? [];
                   if (calendarData.isEmpty) {
@@ -808,7 +810,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           future: _historyFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+              return const Center(child: Padding(padding: EdgeInsets.all(20), child: ArtechLoadingWidget(size: 64, message: 'Memuat riwayat...')));
             } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
               return Container(
                 width: double.infinity,
