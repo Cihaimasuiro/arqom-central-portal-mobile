@@ -2,11 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
 class IzinScreen extends StatefulWidget {
-  const IzinScreen({super.key});
+  final RequestItem? existingItem;
+
+  const IzinScreen({super.key, this.existingItem});
 
   @override
   State<IzinScreen> createState() => _IzinScreenState();
@@ -34,6 +37,29 @@ class _IzinScreenState extends State<IzinScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.existingItem != null) {
+      final item = widget.existingItem!;
+      _startDateController.text = item.startDate;
+      _startDate = DateTime.tryParse(item.startDate);
+      if (item.endDate != null && item.endDate!.isNotEmpty) {
+        _endDateController.text = item.endDate!;
+        _endDate = DateTime.tryParse(item.endDate!);
+      }
+      String desc = item.description;
+      for (final type in _izinTypes) {
+        if (desc.startsWith('[$type]')) {
+          _selectedCategory = type;
+          desc = desc.substring('[$type]'.length).trim();
+          break;
+        }
+      }
+      _descriptionController.text = desc;
+    }
+  }
+
+  @override
   void dispose() {
     _startDateController.dispose();
     _endDateController.dispose();
@@ -58,13 +84,23 @@ class _IzinScreenState extends State<IzinScreen> {
 
     final desc = '[$_selectedCategory] ${_descriptionController.text.trim()}';
 
-    final res = await RequestsService.createRequest(
-      requestType: 'izin',
-      description: desc,
-      startDate: _formatDateYmd(_startDate!),
-      endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
-      attachment: _attachmentFile,
-    );
+    final isEdit = widget.existingItem != null;
+    final res = isEdit
+        ? await RequestsService.updateRequest(
+            id: widget.existingItem!.id,
+            requestType: 'izin',
+            description: desc,
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+            attachment: _attachmentFile,
+          )
+        : await RequestsService.createRequest(
+            requestType: 'izin',
+            description: desc,
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+            attachment: _attachmentFile,
+          );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -88,7 +124,7 @@ class _IzinScreenState extends State<IzinScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Pengajuan Izin',
+          widget.existingItem != null ? 'Edit Pengajuan Izin' : 'Pengajuan Izin',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceContainerLowest,
@@ -221,7 +257,7 @@ class _IzinScreenState extends State<IzinScreen> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Kirim Pengajuan Izin', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Izin', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

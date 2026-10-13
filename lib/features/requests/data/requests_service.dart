@@ -238,7 +238,97 @@ class RequestsService {
     }
   }
 
-  /// 5.6 Detail Pengajuan
+  /// 5.6 Perbarui / Edit Pengajuan (Selama Masih Pending)
+  /// PUT /api/requests/{id} atau PATCH /api/requests/{id}
+  static Future<RequestApiResponse<Map<String, dynamic>>> updateRequest({
+    required int id,
+    required String requestType,
+    required String description,
+    required String startDate,
+    String? endDate,
+    String? startTime,
+    String? endTime,
+    String? location,
+    String? tipeWaktu,
+    String? tipePeserta,
+    List<int>? peserta,
+    File? attachment,
+  }) async {
+    try {
+      final uri = Uri.parse('${AuthService.baseUrl}/requests/$id');
+      final token = await AuthService.getToken();
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Accept'] = 'application/json';
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Method spoofing for multipart PUT
+      request.fields['_method'] = 'PUT';
+      request.fields['request_type'] = requestType;
+      request.fields['description'] = description;
+      request.fields['start_date'] = startDate;
+
+      if (endDate != null && endDate.isNotEmpty) {
+        request.fields['end_date'] = endDate;
+      }
+      if (startTime != null && startTime.isNotEmpty) {
+        request.fields['start_time'] = startTime;
+      }
+      if (endTime != null && endTime.isNotEmpty) {
+        request.fields['end_time'] = endTime;
+      }
+      if (location != null && location.isNotEmpty) {
+        request.fields['location'] = location;
+      }
+      if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+        request.fields['tipe_waktu'] = tipeWaktu;
+      }
+      if (tipePeserta != null && tipePeserta.isNotEmpty) {
+        request.fields['tipe_peserta'] = tipePeserta;
+      }
+      if (peserta != null && peserta.isNotEmpty) {
+        for (int i = 0; i < peserta.length; i++) {
+          request.fields['peserta[$i]'] = peserta[i].toString();
+        }
+      }
+
+      if (attachment != null && await attachment.exists()) {
+        final multipartFile = await http.MultipartFile.fromPath(
+          'attachment',
+          attachment.path,
+        );
+        request.files.add(multipartFile);
+      }
+
+      final streamedResponse = await request.send();
+      final res = await http.Response.fromStream(streamedResponse);
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final decoded = jsonDecode(res.body);
+        return RequestApiResponse(
+          success: true,
+          message: decoded['message']?.toString() ?? 'Pengajuan berhasil diperbarui.',
+          data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+          statusCode: res.statusCode,
+        );
+      } else {
+        return RequestApiResponse(
+          success: false,
+          message: _extractErrorMessage(res),
+          statusCode: res.statusCode,
+        );
+      }
+    } catch (e) {
+      return RequestApiResponse(
+        success: false,
+        message: 'Gagal memperbarui pengajuan: $e',
+      );
+    }
+  }
+
+  /// 5.7 Detail Pengajuan
   /// GET /api/requests/{id}
   static Future<RequestApiResponse<RequestItem>> getRequestDetail(int id) async {
     try {

@@ -2,11 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
 class SakitScreen extends StatefulWidget {
-  const SakitScreen({super.key});
+  final RequestItem? existingItem;
+
+  const SakitScreen({super.key, this.existingItem});
 
   @override
   State<SakitScreen> createState() => _SakitScreenState();
@@ -24,6 +27,21 @@ class _SakitScreenState extends State<SakitScreen> {
 
   DateTime? _startDate;
   DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingItem != null) {
+      final item = widget.existingItem!;
+      _startDateController.text = item.startDate;
+      _startDate = DateTime.tryParse(item.startDate);
+      if (item.endDate != null && item.endDate!.isNotEmpty) {
+        _endDateController.text = item.endDate!;
+        _endDate = DateTime.tryParse(item.endDate!);
+      }
+      _descriptionController.text = item.description;
+    }
+  }
 
   @override
   void dispose() {
@@ -48,13 +66,23 @@ class _SakitScreenState extends State<SakitScreen> {
 
     setState(() => _isLoading = true);
 
-    final res = await RequestsService.createRequest(
-      requestType: 'sakit',
-      description: _descriptionController.text.trim(),
-      startDate: _formatDateYmd(_startDate!),
-      endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
-      attachment: _attachmentFile,
-    );
+    final isEdit = widget.existingItem != null;
+    final res = isEdit
+        ? await RequestsService.updateRequest(
+            id: widget.existingItem!.id,
+            requestType: 'sakit',
+            description: _descriptionController.text.trim(),
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+            attachment: _attachmentFile,
+          )
+        : await RequestsService.createRequest(
+            requestType: 'sakit',
+            description: _descriptionController.text.trim(),
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+            attachment: _attachmentFile,
+          );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -78,7 +106,7 @@ class _SakitScreenState extends State<SakitScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Pengajuan Sakit',
+          widget.existingItem != null ? 'Edit Pengajuan Sakit' : 'Pengajuan Sakit',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceContainerLowest,
@@ -227,7 +255,7 @@ class _SakitScreenState extends State<SakitScreen> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Kirim Pengajuan Sakit', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Sakit', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

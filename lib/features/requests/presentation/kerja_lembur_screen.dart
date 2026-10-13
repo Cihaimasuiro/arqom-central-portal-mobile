@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
 class KerjaLemburScreen extends StatefulWidget {
-  const KerjaLemburScreen({super.key});
+  final RequestItem? existingItem;
+
+  const KerjaLemburScreen({super.key, this.existingItem});
 
   @override
   State<KerjaLemburScreen> createState() => _KerjaLemburScreenState();
@@ -25,6 +28,14 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
   void initState() {
     super.initState();
     _checkRoleAccess();
+    if (widget.existingItem != null) {
+      final item = widget.existingItem!;
+      _dateController.text = item.startDate;
+      _selectedDate = DateTime.tryParse(item.startDate);
+      _startTimeController.text = item.startTime ?? '';
+      _endTimeController.text = item.endTime ?? '';
+      _targetController.text = item.description;
+    }
   }
 
   Future<void> _checkRoleAccess() async {
@@ -123,13 +134,23 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
       desc += ' (Catatan: ${_noteController.text.trim()})';
     }
 
-    final res = await RequestsService.createRequest(
-      requestType: 'lembur',
-      description: desc,
-      startDate: _formatDateYmd(_selectedDate!),
-      startTime: _startTimeController.text.trim(),
-      endTime: _endTimeController.text.trim(),
-    );
+    final isEdit = widget.existingItem != null;
+    final res = isEdit
+        ? await RequestsService.updateRequest(
+            id: widget.existingItem!.id,
+            requestType: 'lembur',
+            description: desc,
+            startDate: _formatDateYmd(_selectedDate!),
+            startTime: _startTimeController.text.trim(),
+            endTime: _endTimeController.text.trim(),
+          )
+        : await RequestsService.createRequest(
+            requestType: 'lembur',
+            description: desc,
+            startDate: _formatDateYmd(_selectedDate!),
+            startTime: _startTimeController.text.trim(),
+            endTime: _endTimeController.text.trim(),
+          );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -152,7 +173,7 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
-        title: const Text('Pengajuan Kerja Lembur', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(widget.existingItem != null ? 'Edit Pengajuan Kerja Lembur' : 'Pengajuan Kerja Lembur', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.onSurface,
         elevation: 0,
@@ -231,7 +252,7 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
                   width: 20,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
-              : const Text('Kirim Pengajuan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       ),
     );

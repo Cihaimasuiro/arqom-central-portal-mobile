@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
 class CutiTahunanScreen extends StatefulWidget {
-  const CutiTahunanScreen({super.key});
+  final RequestItem? existingItem;
+
+  const CutiTahunanScreen({super.key, this.existingItem});
 
   @override
   State<CutiTahunanScreen> createState() => _CutiTahunanScreenState();
@@ -22,6 +25,21 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
   bool _isLoading = false;
 
   final int _sisaCuti = 12;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingItem != null) {
+      final item = widget.existingItem!;
+      _startDateController.text = item.startDate;
+      _startDate = DateTime.tryParse(item.startDate);
+      if (item.endDate != null && item.endDate!.isNotEmpty) {
+        _endDateController.text = item.endDate!;
+        _endDate = DateTime.tryParse(item.endDate!);
+      }
+      _reasonController.text = item.description;
+    }
+  }
 
   @override
   void dispose() {
@@ -52,12 +70,21 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
       fullDesc += ' (Delegasi: ${_delegationController.text.trim()})';
     }
 
-    final res = await RequestsService.createRequest(
-      requestType: 'cuti',
-      description: fullDesc,
-      startDate: _formatDateYmd(_startDate!),
-      endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
-    );
+    final isEdit = widget.existingItem != null;
+    final res = isEdit
+        ? await RequestsService.updateRequest(
+            id: widget.existingItem!.id,
+            requestType: 'cuti',
+            description: fullDesc,
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+          )
+        : await RequestsService.createRequest(
+            requestType: 'cuti',
+            description: fullDesc,
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _endDate != null ? _formatDateYmd(_endDate!) : null,
+          );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -81,7 +108,7 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Pengajuan Cuti Tahunan',
+          widget.existingItem != null ? 'Edit Pengajuan Cuti' : 'Pengajuan Cuti Tahunan',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceContainerLowest,
@@ -155,7 +182,7 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

@@ -583,21 +583,40 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
               if (item.canCancel && item.isOwner) ...[
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _handleCancelRequest(item);
-                    },
-                    icon: const Icon(Icons.cancel_outlined, size: 16, color: AppColors.error),
-                    label: const Text('Batalkan Pengajuan Ini', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.error),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _handleEditRequest(item);
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
+                        label: const Text('Edit Pengajuan', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _handleCancelRequest(item);
+                        },
+                        icon: const Icon(Icons.cancel_outlined, size: 16, color: AppColors.error),
+                        label: const Text('Batalkan', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.error),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -614,6 +633,31 @@ class _RequestsScreenState extends State<RequestsScreen> {
     );
     if (created == true) {
       _fetchData(silent: true);
+    }
+  }
+
+  void _handleEditRequest(RequestItem item) {
+    switch (item.requestType.toLowerCase()) {
+      case 'cuti':
+        _openForm(CutiTahunanScreen(existingItem: item));
+        break;
+      case 'izin':
+        _openForm(IzinScreen(existingItem: item));
+        break;
+      case 'sakit':
+        _openForm(SakitScreen(existingItem: item));
+        break;
+      case 'lembur':
+        _openForm(KerjaLemburScreen(existingItem: item));
+        break;
+      case 'perjalanan_dinas':
+      case 'dinas':
+        _openForm(DinasLuarScreen(existingItem: item));
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tipe pengajuan ${item.requestType} tidak dikenali')),
+        );
     }
   }
 
@@ -1357,20 +1401,32 @@ class _RequestsScreenState extends State<RequestsScreen> {
               // Approval Flow Steps
               _buildApprovalTimeline(item),
 
-              // Cancel Action Button
+              // Actions: Edit & Cancel
               if (item.canCancel && item.isOwner) ...[
                 const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => _handleCancelRequest(item),
-                    icon: const Icon(Icons.cancel_outlined, size: 14, color: AppColors.error),
-                    label: const Text('Batalkan Pengajuan', style: TextStyle(fontSize: 11, color: AppColors.error)),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _handleEditRequest(item),
+                      icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
+                      label: const Text('Edit', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    TextButton.icon(
+                      onPressed: () => _handleCancelRequest(item),
+                      icon: const Icon(Icons.cancel_outlined, size: 14, color: AppColors.error),
+                      label: const Text('Batalkan', style: TextStyle(fontSize: 11, color: AppColors.error)),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],

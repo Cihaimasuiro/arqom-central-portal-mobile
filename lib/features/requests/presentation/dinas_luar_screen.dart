@@ -7,7 +7,9 @@ import '../data/requests_service.dart';
 import 'widgets/request_error_dialog.dart';
 
 class DinasLuarScreen extends StatefulWidget {
-  const DinasLuarScreen({super.key});
+  final RequestItem? existingItem;
+
+  const DinasLuarScreen({super.key, this.existingItem});
 
   @override
   State<DinasLuarScreen> createState() => _DinasLuarScreenState();
@@ -41,6 +43,30 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
   void initState() {
     super.initState();
     _fetchMeta();
+    if (widget.existingItem != null) {
+      final item = widget.existingItem!;
+      _locationController.text = item.location ?? '';
+      _startDateController.text = item.startDate;
+      _startDate = DateTime.tryParse(item.startDate);
+      if (item.endDate != null && item.endDate!.isNotEmpty) {
+        _endDateController.text = item.endDate!;
+        _endDate = DateTime.tryParse(item.endDate!);
+      }
+      _startTimeController.text = item.startTime ?? '';
+      _endTimeController.text = item.endTime ?? '';
+      _descriptionController.text = item.description;
+      if (item.parsedDetails?.tipeWaktu != null) {
+        _tipeWaktu = item.parsedDetails!.tipeWaktu!;
+      }
+      if (item.parsedDetails?.tipePeserta != null) {
+        _tipePeserta = item.parsedDetails!.tipePeserta!;
+      }
+      if (item.parsedDetails?.pesertaIds.isNotEmpty == true) {
+        _selectedGroupEmployeeIds.clear();
+        _selectedGroupEmployeeIds.addAll(item.parsedDetails!.pesertaIds);
+        _selectedSingleEmployeeId = item.parsedDetails!.pesertaIds.first;
+      }
+    }
   }
 
   Future<void> _fetchMeta() async {
@@ -85,7 +111,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
         _loadingMeta = false;
         if (metaRes.success && metaRes.data != null) {
           _availableEmployees = metaRes.data!.employees;
-          if (_availableEmployees.isNotEmpty) {
+          if (_availableEmployees.isNotEmpty && widget.existingItem == null) {
             _selectedSingleEmployeeId = _availableEmployees.first.id;
             _selectedGroupEmployeeIds.add(_availableEmployees.first.id);
           }
@@ -150,19 +176,35 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
 
     setState(() => _isLoading = true);
 
-    final res = await RequestsService.createRequest(
-      requestType: 'perjalanan_dinas',
-      description: _descriptionController.text.trim(),
-      startDate: _formatDateYmd(_startDate!),
-      endDate: _formatDateYmd(_endDate!),
-      startTime: _startTimeController.text.trim().isNotEmpty ? _startTimeController.text.trim() : null,
-      endTime: _endTimeController.text.trim().isNotEmpty ? _endTimeController.text.trim() : null,
-      location: _locationController.text.trim(),
-      tipeWaktu: _tipeWaktu,
-      tipePeserta: _tipePeserta,
-      peserta: selectedIds.isNotEmpty ? selectedIds : null,
-      attachment: _attachmentFile,
-    );
+    final isEdit = widget.existingItem != null;
+    final res = isEdit
+        ? await RequestsService.updateRequest(
+            id: widget.existingItem!.id,
+            requestType: 'perjalanan_dinas',
+            description: _descriptionController.text.trim(),
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _formatDateYmd(_endDate!),
+            startTime: _startTimeController.text.trim().isNotEmpty ? _startTimeController.text.trim() : null,
+            endTime: _endTimeController.text.trim().isNotEmpty ? _endTimeController.text.trim() : null,
+            location: _locationController.text.trim(),
+            tipeWaktu: _tipeWaktu,
+            tipePeserta: _tipePeserta,
+            peserta: selectedIds.isNotEmpty ? selectedIds : null,
+            attachment: _attachmentFile,
+          )
+        : await RequestsService.createRequest(
+            requestType: 'perjalanan_dinas',
+            description: _descriptionController.text.trim(),
+            startDate: _formatDateYmd(_startDate!),
+            endDate: _formatDateYmd(_endDate!),
+            startTime: _startTimeController.text.trim().isNotEmpty ? _startTimeController.text.trim() : null,
+            endTime: _endTimeController.text.trim().isNotEmpty ? _endTimeController.text.trim() : null,
+            location: _locationController.text.trim(),
+            tipeWaktu: _tipeWaktu,
+            tipePeserta: _tipePeserta,
+            peserta: selectedIds.isNotEmpty ? selectedIds : null,
+            attachment: _attachmentFile,
+          );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -330,7 +372,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Pengajuan Perjalanan Dinas',
+          widget.existingItem != null ? 'Edit Perjalanan Dinas' : 'Pengajuan Perjalanan Dinas',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceContainerLowest,
@@ -667,7 +709,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Kirim Pengajuan Dinas', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Dinas', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
