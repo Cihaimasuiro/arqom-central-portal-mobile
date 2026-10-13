@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/live_clock_widget.dart';
-import '../../requests/presentation/izin_sakit_screen.dart';
+import '../../requests/presentation/izin_screen.dart';
 import '../data/attendance_service.dart';
 import 'attendance_history_screen.dart';
 
@@ -919,7 +919,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 'Cuti/Izin', 
                 AppColors.secondary,
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IzinSakitScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IzinScreen()));
                 },
               ),
             ),

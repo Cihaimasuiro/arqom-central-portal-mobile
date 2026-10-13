@@ -13,8 +13,10 @@ import '../data/models/activity.dart';
 import '../data/models/announcement.dart';
 import '../../worship/presentation/almatsurat_screen.dart';
 import '../../requests/presentation/dinas_luar_screen.dart';
-import '../../requests/presentation/izin_sakit_screen.dart';
 import '../../requests/presentation/cuti_tahunan_screen.dart';
+import '../../requests/presentation/izin_screen.dart';
+import '../../requests/presentation/sakit_screen.dart';
+import '../../requests/presentation/kerja_lembur_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -465,17 +467,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final items = [
       _QuickItem(Icons.history_toggle_off, 'Kehadiran', () { widget.onNavigateTab?.call(1); }),
       _QuickItem(Icons.event_available, 'Pengajuan', () { widget.onNavigateTab?.call(3); }),
+      _QuickItem(Icons.beach_access, 'Cuti', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CutiTahunanScreen()));
+      }),
+      _QuickItem(Icons.assignment_turned_in, 'Izin', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IzinScreen()));
+      }),
+      _QuickItem(Icons.sick, 'Sakit', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SakitScreen()));
+      }),
       _QuickItem(Icons.flight_takeoff, 'Dinas Luar', () {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DinasLuarScreen()));
       }),
-      _QuickItem(Icons.sick, 'Sakit/Izin', () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IzinSakitScreen()));
+      _QuickItem(Icons.more_time, 'Lembur', () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KerjaLemburScreen()));
       }),
       _QuickItem(Icons.auto_stories, 'Al-Ma\'tsurat', () {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AlmatsuratScreen()));
-      }),
-      _QuickItem(Icons.beach_access, 'Cuti', () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CutiTahunanScreen()));
       }),
     ];
 
