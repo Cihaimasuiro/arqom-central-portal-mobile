@@ -37,6 +37,15 @@ class ArtechLoadingWidget extends StatefulWidget {
   /// Custom background color when [isFullScreen] is true.
   final Color? backgroundColor;
 
+  /// Whether the animation loops continuously. If false, plays once and stays fully revealed.
+  final bool repeat;
+
+  /// Total duration of one animation cycle. Defaults to 3.2 seconds.
+  final Duration duration;
+
+  /// Callback fired when the animation completes its reveal cycle (only when repeat is false).
+  final VoidCallback? onCompleted;
+
   const ArtechLoadingWidget({
     super.key,
     this.size = 80.0,
@@ -47,6 +56,9 @@ class ArtechLoadingWidget extends StatefulWidget {
     this.messageColor,
     this.isFullScreen = false,
     this.backgroundColor,
+    this.repeat = true,
+    this.duration = const Duration(milliseconds: 3200),
+    this.onCompleted,
   });
 
   /// Compact/small preset for inline badges, buttons, or tight list items.
@@ -59,7 +71,10 @@ class ArtechLoadingWidget extends StatefulWidget {
     this.showText = false,
     this.messageColor,
   })  : isFullScreen = false,
-        backgroundColor = null;
+        backgroundColor = null,
+        repeat = true,
+        duration = const Duration(milliseconds: 3200),
+        onCompleted = null;
 
   /// Full screen loading screen with subtle radial backdrop.
   const ArtechLoadingWidget.fullScreen({
@@ -71,7 +86,10 @@ class ArtechLoadingWidget extends StatefulWidget {
     this.showText = true,
     this.messageColor,
     this.backgroundColor,
-  }) : isFullScreen = true;
+  })  : isFullScreen = true,
+        repeat = true,
+        duration = const Duration(milliseconds: 3200),
+        onCompleted = null;
 
   /// Shows a modal dialog containing the ARTECH animated loading widget.
   static Future<void> showLoadingDialog(
@@ -152,11 +170,19 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
   @override
   void initState() {
     super.initState();
-    // 3.2s infinite animation loop
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
-    )..repeat();
+      duration: widget.duration,
+    );
+    if (widget.repeat) {
+      _controller.repeat();
+    } else {
+      _controller.forward().then((_) {
+        if (mounted) {
+          widget.onCompleted?.call();
+        }
+      });
+    }
   }
 
   @override
@@ -196,9 +222,15 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
             haloOpacity = _lerp(0.24, 0.52, p);
             haloScale = _lerp(0.93, 1.01, p);
           } else {
-            final p = (t - 0.82) / 0.18;
-            haloOpacity = _lerp(0.52, 0.0, p);
-            haloScale = _lerp(1.01, 1.06, p);
+            if (!widget.repeat) {
+              final p = (t - 0.82) / 0.18;
+              haloOpacity = _lerp(0.52, 0.20, p);
+              haloScale = 1.0;
+            } else {
+              final p = (t - 0.82) / 0.18;
+              haloOpacity = _lerp(0.52, 0.0, p);
+              haloScale = _lerp(1.01, 1.06, p);
+            }
           }
         }
 
@@ -226,8 +258,13 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           ringSweep = 1.0;
           ringScale = 1.0;
         } else {
-          final p = (t - 0.82) / 0.18;
-          ringOpacity = _lerp(1.0, 0.0, p);
+          // If repeat is false, keep the ring fully revealed!
+          if (!widget.repeat) {
+            ringOpacity = 1.0;
+          } else {
+            final p = (t - 0.82) / 0.18;
+            ringOpacity = _lerp(1.0, 0.0, p);
+          }
           ringSweep = 1.0;
           ringScale = 1.0;
         }
@@ -254,8 +291,13 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           symbolTranslateY = 0.0;
           symbolScale = 1.0;
         } else {
-          final p = (t - 0.82) / 0.18;
-          symbolOpacity = _lerp(1.0, 0.0, p);
+          // If repeat is false, keep the symbol fully revealed!
+          if (!widget.repeat) {
+            symbolOpacity = 1.0;
+          } else {
+            final p = (t - 0.82) / 0.18;
+            symbolOpacity = _lerp(1.0, 0.0, p);
+          }
           symbolTranslateY = 0.0;
           symbolScale = 1.0;
         }
@@ -283,8 +325,13 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
             textTranslateY = 0.0;
             textScale = 1.0;
           } else {
-            final p = (t - 0.82) / 0.18;
-            textOpacity = _lerp(1.0, 0.0, p);
+            // If repeat is false, keep the text fully revealed!
+            if (!widget.repeat) {
+              textOpacity = 1.0;
+            } else {
+              final p = (t - 0.82) / 0.18;
+              textOpacity = _lerp(1.0, 0.0, p);
+            }
             textTranslateY = 0.0;
             textScale = 1.0;
           }

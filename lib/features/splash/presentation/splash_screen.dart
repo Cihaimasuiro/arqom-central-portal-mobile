@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/data/auth_service.dart';
@@ -12,146 +13,132 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _slideAnimation;
+class _SplashScreenState extends State<SplashScreen> {
+  late final Future<bool> _authCheckFuture;
+  Timer? _safetyTimer;
+  bool _isNavigating = false;
 
   @override
   void initState() {
     super.initState();
+    // Run auth check in background while entrance animation plays
+    _authCheckFuture = AuthService.checkProfile();
 
-    // Inisialisasi controller animasi dengan durasi 2 detik
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    );
-
-    // Animasi efek membesar (scaling)
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
-      ),
-    );
-
-    // Animasi efek kemunculan transparan ke solid (fading)
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeIn),
-      ),
-    );
-
-    // Animasi efek bergeser dari bawah ke atas (sliding)
-    _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // Memulai animasi
-    _controller.forward();
-
-    // Timer untuk berpindah ke halaman utama setelah 3.5 detik
-    Future.delayed(const Duration(milliseconds: 3500), () async {
-      bool isValid = await AuthService.checkProfile();
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 800),
-            pageBuilder:
-                (_, __, ___) =>
-                    isValid ? const MainScaffold() : const LoginScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
+    // Safety fallback timer so app never gets stuck under unforeseen edge-cases
+    _safetyTimer = Timer(const Duration(milliseconds: 4500), () {
+      _handleAnimationCompleted();
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _safetyTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _handleAnimationCompleted() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+    _safetyTimer?.cancel();
+
+    bool isValid = false;
+    try {
+      isValid = await _authCheckFuture.timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+    } catch (_) {
+      isValid = false;
+    }
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 700),
+        pageBuilder:
+            (_, __, ___) =>
+                isValid ? const MainScaffold() : const LoginScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final logoSize = (screenWidth * 0.44).clamp(140.0, 180.0);
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: Transform.translate(
-                offset: Offset(0, _slideAnimation.value),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Image.asset(
-                            'logo/favicon-removebg-preview.png',
-                            width: 70,
-                            height: 70,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'CENTRAL PORTAL',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'One platform for Arqom services',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 64),
-                    const ArtechLoadingWidget(
-                      size: 64,
-                      showHalo: true,
-                    ),
-                  ],
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.95,
+            colors: [
+              Color(0xFFFFFFFF),
+              Color(0xFFFCFCFD),
+              Color(0xFFF3F5FA),
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 3),
+
+              // Animated ARTECH Logo (Reveals ring, symbol, text completely first)
+              ArtechLoadingWidget(
+                size: logoSize,
+                showHalo: true,
+                repeat: false,
+                duration: const Duration(milliseconds: 3000),
+                onCompleted: _handleAnimationCompleted,
+              ),
+
+              const SizedBox(height: 28),
+
+              // Application Name & Subtitle
+              Text(
+                'CENTRAL PORTAL',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.2,
                 ),
               ),
-            );
-          },
+              const SizedBox(height: 6),
+              Text(
+                'One platform for Arqom services',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const Spacer(flex: 4),
+
+              // Footer branding
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'v1.0.0 • Arqom Portal',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                    color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
