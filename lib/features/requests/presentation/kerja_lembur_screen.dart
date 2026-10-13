@@ -32,9 +32,10 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
   bool _isLoading = false;
   bool _loadingMeta = true;
 
-  // Tipe Peserta: 'individu' (Diri Sendiri) | 'kelompok' (Tim / Rekan Kerja)
+  // Tipe Peserta: 'individu' | 'kelompok'
   String _tipePeserta = 'individu';
   List<EmployeeSimple> _availableEmployees = [];
+  int? _selectedSingleEmployeeId;
   final Set<int> _selectedGroupEmployeeIds = {};
 
   @override
@@ -60,9 +61,14 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
       }
 
       if (item.parsedDetails?.pesertaIds.isNotEmpty == true) {
-        _tipePeserta = 'kelompok';
-        _selectedGroupEmployeeIds.clear();
-        _selectedGroupEmployeeIds.addAll(item.parsedDetails!.pesertaIds);
+        if (_tipePeserta == 'kelompok' || item.parsedDetails!.pesertaIds.length > 1) {
+          _tipePeserta = 'kelompok';
+          _selectedGroupEmployeeIds.clear();
+          _selectedGroupEmployeeIds.addAll(item.parsedDetails!.pesertaIds);
+        } else {
+          _tipePeserta = 'individu';
+          _selectedSingleEmployeeId = item.parsedDetails!.pesertaIds.first;
+        }
       }
     }
   }
@@ -200,6 +206,119 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  void _showSingleEmployeeDropdownPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final filteredEmployees = _availableEmployees.where((emp) {
+              final query = searchQuery.toLowerCase();
+              return emp.name.toLowerCase().contains(query) ||
+                  emp.division.toLowerCase().contains(query) ||
+                  emp.position.toLowerCase().contains(query);
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Pilih Pegawai yang Lembur',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama atau divisi pegawai...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.search, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() {
+                        searchQuery = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  Expanded(
+                    child: filteredEmployees.isEmpty
+                        ? const Center(
+                            child: Text('Pegawai tidak ditemukan', style: TextStyle(fontSize: 12, color: AppColors.outline)),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredEmployees.length,
+                            itemBuilder: (ctx, i) {
+                              final emp = filteredEmployees[i];
+                              final isSelected = _selectedSingleEmployeeId == emp.id;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: isSelected ? AppColors.primary : AppColors.primaryContainer.withValues(alpha: 0.5),
+                                  child: Text(
+                                    emp.name.isNotEmpty ? emp.name[0].toUpperCase() : '?',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(emp.name, style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
+                                subtitle: Text(
+                                  '${emp.position.isNotEmpty ? emp.position : "-"} • ${emp.division}',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                                ),
+                                trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSingleEmployeeId = emp.id;
+                                  });
+                                  Navigator.pop(ctx);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showGroupEmployeeDropdownPicker(BuildContext context) {
@@ -341,11 +460,20 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
       return;
     }
 
-    if (_tipePeserta == 'kelompok' && _selectedGroupEmployeeIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih minimal 1 rekan kerja / anggota tim untuk lembur kelompok')),
-      );
-      return;
+    if (_tipePeserta == 'individu') {
+      if (_selectedSingleEmployeeId == null && _availableEmployees.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pilih pegawai yang ditugaskan lembur')),
+        );
+        return;
+      }
+    } else {
+      if (_selectedGroupEmployeeIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pilih minimal 1 rekan kerja / anggota tim untuk lembur kelompok')),
+        );
+        return;
+      }
     }
 
     // Validasi jam
@@ -369,7 +497,9 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
     final isEdit = widget.existingItem != null;
     final startDateStr = _formatDateYmd(_startDate!);
     final endDateStr = _endDate != null ? _formatDateYmd(_endDate!) : startDateStr;
-    final selectedIds = _tipePeserta == 'kelompok' ? _selectedGroupEmployeeIds.toList() : null;
+    final selectedIds = _tipePeserta == 'individu'
+        ? (_selectedSingleEmployeeId != null ? [_selectedSingleEmployeeId!] : null)
+        : _selectedGroupEmployeeIds.toList();
 
     final res = isEdit
         ? await RequestsService.updateRequest(
@@ -485,10 +615,47 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Pilihan Peserta Tim (Jika Kelompok)
-                    if (_tipePeserta == 'kelompok') ...[
-                      Text('Anggota Tim yang Lembur *', style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                    // Pilihan Pegawai Lembur (Individu vs Kelompok)
+                    Text(
+                      _tipePeserta == 'individu' ? 'Pegawai yang Lembur *' : 'Anggota Tim yang Lembur *',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_tipePeserta == 'individu') ...[
+                      InkWell(
+                        onTap: () => _showSingleEmployeeDropdownPicker(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                            suffixIcon: const Icon(Icons.arrow_drop_down, color: AppColors.onSurfaceVariant),
+                          ),
+                          child: Builder(
+                            builder: (context) {
+                              final selectedEmp = _availableEmployees
+                                  .where((e) => e.id == _selectedSingleEmployeeId)
+                                  .firstOrNull;
+                              if (selectedEmp != null) {
+                                return Text(
+                                  '${selectedEmp.name} (${selectedEmp.position.isNotEmpty ? selectedEmp.position : selectedEmp.division})',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurface),
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              }
+                              return const Text(
+                                'Pilih pegawai dari daftar...',
+                                style: TextStyle(fontSize: 12, color: AppColors.outline),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ] else ...[
                       InkWell(
                         onTap: () => _showGroupEmployeeDropdownPicker(context),
                         borderRadius: BorderRadius.circular(12),
