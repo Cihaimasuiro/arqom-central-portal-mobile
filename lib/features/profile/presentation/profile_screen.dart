@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/artech_loading_widget.dart';
+import '../../../core/widgets/artech_pull_to_refresh.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/data/auth_service.dart';
 
@@ -32,21 +32,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  bool _isRefreshingOverlay = false;
-
   Future<void> _refreshData() async {
-    setState(() {
-      _isRefreshingOverlay = true;
-    });
     await Future.wait([
       _loadUserData(),
-      Future.delayed(const Duration(seconds: 1)),
+      Future.delayed(const Duration(milliseconds: 600)),
     ]);
-    if (mounted) {
-      setState(() {
-        _isRefreshingOverlay = false;
-      });
-    }
   }
 
   @override
@@ -55,18 +45,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppColors.surfaceContainerLowest,
       body: _isLoading 
           ? const ArtechLoadingWidget.fullScreen(size: 80, message: 'Memuat profil...')
-          : Stack(
-              children: [
-                RefreshIndicator(
-                  color: Colors.transparent,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  onRefresh: _refreshData,
+          : ArtechPullToRefresh(
+              onRefresh: _refreshData,
+              refreshingText: 'Memperbarui profil...',
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   _buildProfileHeader(context),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -167,20 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          if (_isRefreshingOverlay)
-                  Positioned.fill(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        child: ArtechLoadingWidget.overlayCard(
-                          message: 'Memperbarui profil...',
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
     );
   }
 

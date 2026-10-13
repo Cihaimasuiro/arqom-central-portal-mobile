@@ -1,7 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/artech_loading_widget.dart';
+import '../../../core/widgets/artech_pull_to_refresh.dart';
 import '../../auth/data/auth_service.dart';
 import 'widgets/monthly_target_tab.dart';
 import 'widgets/weekly_plan_tab.dart';
@@ -18,7 +17,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   Map<String, dynamic>? _userData;
   int _selectedTabIndex = 0; // 0: Target Bulanan, 1: Weekly Plan, 2: Weekly Review
   int _refreshKey = 0;
-  bool _isRefreshingOverlay = false;
 
   @override
   void initState() {
@@ -37,18 +35,12 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
 
   Future<void> _refreshData() async {
     setState(() {
-      _isRefreshingOverlay = true;
       _refreshKey++;
     });
     await Future.wait([
       _loadUserData(),
-      Future.delayed(const Duration(milliseconds: 700)),
+      Future.delayed(const Duration(milliseconds: 600)),
     ]);
-    if (mounted) {
-      setState(() {
-        _isRefreshingOverlay = false;
-      });
-    }
   }
 
   void _onDataChanged() {
@@ -61,48 +53,31 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.surface,
-            onRefresh: _refreshData,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildMiniHeader(context),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildProfileSubHeader(context),
-                        const SizedBox(height: 14),
-                        _buildTabNavigation(context),
-                        const SizedBox(height: 16),
-                        _buildActiveTabContent(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isRefreshingOverlay)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: ArtechLoadingWidget.overlayCard(
-                    message: 'Memperbarui performa...',
-                  ),
+      body: ArtechPullToRefresh(
+        onRefresh: _refreshData,
+        refreshingText: 'Memperbarui performa...',
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildMiniHeader(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildProfileSubHeader(context),
+                    const SizedBox(height: 14),
+                    _buildTabNavigation(context),
+                    const SizedBox(height: 16),
+                    _buildActiveTabContent(),
+                  ],
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

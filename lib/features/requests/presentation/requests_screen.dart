@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/artech_loading_widget.dart';
+import '../../../core/widgets/artech_pull_to_refresh.dart';
 import '../data/models/request_models.dart';
 import '../data/requests_service.dart';
 import 'cuti_tahunan_screen.dart';
@@ -666,12 +667,11 @@ class _RequestsScreenState extends State<RequestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        backgroundColor: AppColors.surface,
+      body: ArtechPullToRefresh(
         onRefresh: () => _fetchData(silent: true),
+        refreshingText: 'Memperbarui pengajuan...',
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

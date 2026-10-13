@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -11,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/artech_loading_widget.dart';
+import '../../../core/widgets/artech_pull_to_refresh.dart';
 import '../../../core/widgets/live_clock_widget.dart';
 import '../../requests/presentation/izin_screen.dart';
 import '../data/attendance_service.dart';
@@ -38,7 +38,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     _refreshData();
   }
 
-  bool _isRefreshingOverlay = false;
 
   Future<File?> _takePhoto() async {
     final ImagePicker picker = ImagePicker();
@@ -57,7 +56,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Future<void> _refreshData() async {
     setState(() {
-      _isRefreshingOverlay = true;
       _todayFuture = AttendanceService.getToday();
       _positionFuture = Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
       _summaryFuture = AttendanceService.getSummary();
@@ -70,66 +68,42 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         _historyFuture,
       ]);
     } catch (_) {}
-    if (mounted) {
-      setState(() {
-        _isRefreshingOverlay = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: Colors.transparent,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            onRefresh: _refreshData,
+      body: ArtechPullToRefresh(
+        onRefresh: _refreshData,
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildMiniHeader(context),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildInteractiveAttendanceCard(context),
-                  const SizedBox(height: 16),
-                  _buildCheckOutButton(context),
-                  const SizedBox(height: 20),
-                  _buildStatisticsSummary(context),
-                  const SizedBox(height: 20),
-                  _buildAttendanceCalendar(context),
-                  const SizedBox(height: 20),
-                  _buildAttendanceHistory(context),
-                  const SizedBox(height: 20),
-                  _buildQuickActions(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      ),
-          if (_isRefreshingOverlay)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: ArtechLoadingWidget.overlayCard(
-                    message: 'Memperbarui data presensi...',
-                  ),
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildMiniHeader(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildInteractiveAttendanceCard(context),
+                    const SizedBox(height: 16),
+                    _buildCheckOutButton(context),
+                    const SizedBox(height: 20),
+                    _buildStatisticsSummary(context),
+                    const SizedBox(height: 20),
+                    _buildAttendanceCalendar(context),
+                    const SizedBox(height: 20),
+                    _buildAttendanceHistory(context),
+                    const SizedBox(height: 20),
+                    _buildQuickActions(context),
+                  ],
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

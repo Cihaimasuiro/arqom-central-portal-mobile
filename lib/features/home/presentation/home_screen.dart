@@ -1,10 +1,9 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/artech_loading_widget.dart';
+import '../../../core/widgets/artech_pull_to_refresh.dart';
 import '../../../core/widgets/live_clock_widget.dart';
 import '../../auth/data/auth_service.dart';
 import '../../attendance/data/attendance_service.dart';
@@ -176,78 +175,51 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Selamat Malam';
   }
 
-  bool _isRefreshingOverlay = false;
-
   Future<void> _refreshData() async {
     setState(() {
       _isLoadingDashboard = true;
-      _isRefreshingOverlay = true;
       _todayFuture = AttendanceService.getToday();
     });
     await Future.wait([
       _loadUserData(),
       _loadDashboardData(),
     ]);
-    if (mounted) {
-      setState(() {
-        _isRefreshingOverlay = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: Colors.transparent,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            onRefresh: _refreshData,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildAttendanceCard(context),
-                  const SizedBox(height: 20),
-                  _buildQuickAccess(context),
-                  const SizedBox(height: 20),
-                  _buildPerformanceRow(context),
-                  const SizedBox(height: 20),
-                  _buildAgendaSection(context),
-                  const SizedBox(height: 20),
-                  _buildAnnouncementSection(context),
-                  const SizedBox(height: 20),
-                  _buildDailyQuote(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      ),
-          if (_isRefreshingOverlay)
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: ArtechLoadingWidget.overlayCard(
-                    message: 'Memperbarui data...',
-                  ),
+      body: ArtechPullToRefresh(
+        onRefresh: _refreshData,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildAttendanceCard(context),
+                    const SizedBox(height: 20),
+                    _buildQuickAccess(context),
+                    const SizedBox(height: 20),
+                    _buildPerformanceRow(context),
+                    const SizedBox(height: 20),
+                    _buildAgendaSection(context),
+                    const SizedBox(height: 20),
+                    _buildAnnouncementSection(context),
+                    const SizedBox(height: 20),
+                    _buildDailyQuote(context),
+                  ],
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

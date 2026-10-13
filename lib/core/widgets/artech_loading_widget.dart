@@ -139,6 +139,113 @@ class ArtechLoadingWidget extends StatefulWidget {
     );
   }
 
+  /// Interactive preview of the ARTECH logo matching drag/pull progress [0.0..1.0].
+  /// The ring draws dynamically in sync with user's pull gesture.
+  static Widget preview({
+    required double progress,
+    double size = 26.0,
+    bool showHalo = true,
+  }) {
+    final clamped = progress.clamp(0.0, 1.0);
+    final ringSweep = clamped;
+    final ringOpacity = (clamped * 1.6).clamp(0.0, 1.0);
+    final symbolProgress = ((clamped - 0.38) / 0.62).clamp(0.0, 1.0);
+    final symbolOpacity = symbolProgress;
+    final symbolScale = 0.82 + (0.18 * symbolProgress);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Subtle halo glow appearing near threshold
+          if (showHalo && clamped >= 0.45)
+            Opacity(
+              opacity: ((clamped - 0.45) / 0.55 * 0.7).clamp(0.0, 0.7),
+              child: Container(
+                width: size * 0.95,
+                height: size * 0.95,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Color(0x35FE961D),
+                      Color(0x18FE961D),
+                      Color(0x00FE961D),
+                    ],
+                    stops: [0.0, 0.45, 0.85],
+                  ),
+                ),
+              ),
+            ),
+
+          // Dynamic conic ring reveal tied to pull gesture
+          if (ringOpacity > 0.01)
+            Opacity(
+              opacity: ringOpacity,
+              child: _buildMaskedRingStatic(ringSweep, size),
+            ),
+
+          // Symbol entering as pull reaches threshold
+          if (symbolOpacity > 0.01)
+            Transform.scale(
+              scale: symbolScale,
+              child: Opacity(
+                opacity: symbolOpacity,
+                child: Image.asset(
+                  'logo/artech_symbol.png',
+                  width: size,
+                  height: size,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildMaskedRingStatic(double sweepProgress, double stageSize) {
+    final ringImage = Image.asset(
+      'logo/artech_ring.png',
+      width: stageSize,
+      height: stageSize,
+      fit: BoxFit.contain,
+    );
+
+    if (sweepProgress >= 0.999) {
+      return ringImage;
+    }
+    if (sweepProgress <= 0.001) {
+      return const SizedBox.shrink();
+    }
+
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (Rect bounds) {
+        final sweep = sweepProgress.clamp(0.0, 1.0);
+        return SweepGradient(
+          transform: const GradientRotation(-152 * math.pi / 180),
+          colors: const [
+            Color(0xFF000000),
+            Color(0xFF000000),
+            Color(0x00000000),
+            Color(0x00000000),
+          ],
+          stops: [
+            0.0,
+            sweep,
+            (sweep + 0.01).clamp(0.0, 1.0),
+            1.0,
+          ],
+        ).createShader(bounds);
+      },
+      child: ringImage,
+    );
+  }
+
   /// Elegant floating overlay card for pull-to-refresh or background synchronization.
   /// Encloses the animated logo and status text in a frosted white rounded card.
   static Widget overlayCard({
