@@ -6,7 +6,6 @@ import 'cuti_tahunan_screen.dart';
 import 'izin_sakit_screen.dart';
 import 'dinas_luar_screen.dart';
 import 'kerja_lembur_screen.dart';
-import 'reimburse_screen.dart';
 
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
@@ -878,61 +877,61 @@ class _RequestsScreenState extends State<RequestsScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.95,
-          children: [
-            _buildCategoryButton(
-              context,
-              'Libur Cuti',
-              Icons.beach_access_rounded,
-              AppColors.primaryContainer.withValues(alpha: 0.4),
-              AppColors.primary,
-              onTap: () => _openForm(const CutiTahunanScreen()),
-            ),
-            _buildCategoryButton(
-              context,
-              'Sakit & Izin',
-              Icons.medical_services_rounded,
-              AppColors.errorContainer.withValues(alpha: 0.4),
-              AppColors.error,
-              onTap: () => _openForm(const IzinSakitScreen()),
-            ),
-            _buildCategoryButton(
-              context,
-              'Perjalanan Dinas',
-              Icons.flight_takeoff_rounded,
-              canElevated ? AppColors.tertiaryContainer.withValues(alpha: 0.4) : Colors.grey.shade100,
-              canElevated ? AppColors.tertiary : Colors.grey.shade400,
-              isLocked: !canElevated,
-              onTap: canElevated
-                  ? () => _openForm(const DinasLuarScreen())
-                  : () => _showElevatedRoleWarning('Perjalanan Dinas'),
-            ),
-            _buildCategoryButton(
-              context,
-              'Lembur',
-              Icons.access_time_filled_rounded,
-              canElevated ? Colors.indigo.withValues(alpha: 0.12) : Colors.grey.shade100,
-              canElevated ? Colors.indigo : Colors.grey.shade400,
-              isLocked: !canElevated,
-              onTap: canElevated
-                  ? () => _openForm(const KerjaLemburScreen())
-                  : () => _showElevatedRoleWarning('Kerja Lembur'),
-            ),
-            _buildCategoryButton(
-              context,
-              'Reimburse',
-              Icons.receipt_long_rounded,
-              AppColors.secondaryContainer.withValues(alpha: 0.4),
-              AppColors.secondary,
-              onTap: () => _openForm(const ReimburseScreen()),
-            ),
-          ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildCategoryButton(
+                  context,
+                  'Libur Cuti',
+                  Icons.beach_access_rounded,
+                  AppColors.primaryContainer.withValues(alpha: 0.4),
+                  AppColors.primary,
+                  onTap: () => _openForm(const CutiTahunanScreen()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCategoryButton(
+                  context,
+                  'Sakit & Izin',
+                  Icons.medical_services_rounded,
+                  AppColors.errorContainer.withValues(alpha: 0.4),
+                  AppColors.error,
+                  onTap: () => _openForm(const IzinSakitScreen()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCategoryButton(
+                  context,
+                  'Dinas Luar',
+                  Icons.flight_takeoff_rounded,
+                  canElevated ? AppColors.tertiaryContainer.withValues(alpha: 0.4) : Colors.grey.shade100,
+                  canElevated ? AppColors.tertiary : Colors.grey.shade400,
+                  isLocked: !canElevated,
+                  onTap: canElevated
+                      ? () => _openForm(const DinasLuarScreen())
+                      : () => _showElevatedRoleWarning('Perjalanan Dinas'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCategoryButton(
+                  context,
+                  'Lembur',
+                  Icons.access_time_filled_rounded,
+                  canElevated ? Colors.indigo.withValues(alpha: 0.12) : Colors.grey.shade100,
+                  canElevated ? Colors.indigo : Colors.grey.shade400,
+                  isLocked: !canElevated,
+                  onTap: canElevated
+                      ? () => _openForm(const KerjaLemburScreen())
+                      : () => _showElevatedRoleWarning('Kerja Lembur'),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -998,22 +997,23 @@ class _RequestsScreenState extends State<RequestsScreen> {
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-                        child: Icon(icon, color: iconColor, size: 20),
+                        child: Icon(icon, color: iconColor, size: 18),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         label,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
+                              fontSize: 10,
                               color: isLocked ? AppColors.outline : null,
                             ),
                         textAlign: TextAlign.center,
