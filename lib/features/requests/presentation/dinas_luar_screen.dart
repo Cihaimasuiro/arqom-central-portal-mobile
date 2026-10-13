@@ -222,41 +222,143 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
     }
   }
 
-  void _showGroupEmployeeDropdownPicker(BuildContext context) {
-    final searchController = TextEditingController();
+  void _showSingleEmployeeDropdownPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        String searchQuery = '';
         return StatefulBuilder(
           builder: (ctx, setModalState) {
-            final query = searchController.text.trim().toLowerCase();
-            final filteredEmployees = query.isEmpty
-                ? _availableEmployees
-                : _availableEmployees.where((emp) {
-                    return emp.name.toLowerCase().contains(query) ||
-                        emp.position.toLowerCase().contains(query) ||
-                        emp.division.toLowerCase().contains(query);
-                  }).toList();
+            final filteredEmployees = _availableEmployees.where((emp) {
+              final query = searchQuery.toLowerCase();
+              return emp.name.toLowerCase().contains(query) ||
+                  emp.division.toLowerCase().contains(query) ||
+                  emp.position.toLowerCase().contains(query);
+            }).toList();
 
             return Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.75,
-              ),
+              height: MediaQuery.of(context).size.height * 0.75,
               decoration: const BoxDecoration(
-                color: AppColors.surface,
+                color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: EdgeInsets.fromLTRB(
-                20,
-                16,
-                20,
-                MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Pilih Pegawai Peserta Dinas',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama atau divisi pegawai...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.search, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() {
+                        searchQuery = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  Expanded(
+                    child: filteredEmployees.isEmpty
+                        ? const Center(
+                            child: Text('Pegawai tidak ditemukan', style: TextStyle(fontSize: 12, color: AppColors.outline)),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredEmployees.length,
+                            itemBuilder: (ctx, i) {
+                              final emp = filteredEmployees[i];
+                              final isSelected = _selectedSingleEmployeeId == emp.id;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: isSelected ? AppColors.primary : AppColors.primaryContainer.withValues(alpha: 0.5),
+                                  child: Text(
+                                    emp.name.isNotEmpty ? emp.name[0].toUpperCase() : '?',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(emp.name, style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
+                                subtitle: Text(
+                                  '${emp.position.isNotEmpty ? emp.position : "-"} • ${emp.division}',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
+                                ),
+                                trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSingleEmployeeId = emp.id;
+                                  });
+                                  Navigator.pop(ctx);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showGroupEmployeeDropdownPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final filteredEmployees = _availableEmployees.where((emp) {
+              final query = searchQuery.toLowerCase();
+              return emp.name.toLowerCase().contains(query) ||
+                  emp.division.toLowerCase().contains(query) ||
+                  emp.position.toLowerCase().contains(query);
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
                 children: [
                   Center(
                     child: Container(
@@ -274,7 +376,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                     children: [
                       const Expanded(
                         child: Text(
-                          'Pilih Pegawai Peserta Dinas',
+                          'Pilih Anggota Tim Peserta Dinas',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -296,15 +398,18 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: searchController,
                     decoration: InputDecoration(
-                      hintText: 'Cari nama atau divisi...',
+                      hintText: 'Cari nama atau divisi pegawai...',
                       hintStyle: const TextStyle(fontSize: 12),
                       prefixIcon: const Icon(Icons.search, size: 18),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onChanged: (_) => setModalState(() {}),
+                    onChanged: (val) {
+                      setModalState(() {
+                        searchQuery = val;
+                      });
+                    },
                   ),
                   const SizedBox(height: 8),
                   const Divider(),
@@ -331,13 +436,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                                     if (checked == true) {
                                       _selectedGroupEmployeeIds.add(emp.id);
                                     } else {
-                                      if (_selectedGroupEmployeeIds.length > 1) {
-                                        _selectedGroupEmployeeIds.remove(emp.id);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Minimal 1 pegawai harus dipilih')),
-                                        );
-                                      }
+                                      _selectedGroupEmployeeIds.remove(emp.id);
                                     }
                                   });
                                   setModalState(() {});
@@ -352,7 +451,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text('Simpan Pilihan', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -493,32 +592,40 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   ),
                   child: const Text('Tidak ada data pegawai yang tersedia', style: TextStyle(fontSize: 12, color: AppColors.outline)),
                 )
-              else if (_tipePeserta == 'individu')
-                DropdownButtonFormField<int>(
-                  value: _selectedSingleEmployeeId,
-                  isExpanded: true,
-                  hint: const Text('Pilih Pegawai', style: TextStyle(fontSize: 12)),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+              else if (_tipePeserta == 'individu') ...[
+                InkWell(
+                  onTap: () => _showSingleEmployeeDropdownPicker(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+                      suffixIcon: const Icon(Icons.arrow_drop_down, color: AppColors.onSurfaceVariant),
+                    ),
+                    child: Builder(
+                      builder: (context) {
+                        final selectedEmp = _availableEmployees
+                            .where((e) => e.id == _selectedSingleEmployeeId)
+                            .firstOrNull;
+                        if (selectedEmp != null) {
+                          return Text(
+                            '${selectedEmp.name} (${selectedEmp.position.isNotEmpty ? selectedEmp.position : selectedEmp.division})',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurface),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }
+                        return const Text(
+                          'Pilih pegawai dari daftar...',
+                          style: TextStyle(fontSize: 12, color: AppColors.outline),
+                        );
+                      },
+                    ),
                   ),
-                  items: _availableEmployees
-                      .map((emp) => DropdownMenuItem(
-                            value: emp.id,
-                            child: Text(
-                              '${emp.name} (${emp.position.isNotEmpty ? emp.position : emp.division})',
-                              style: const TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: (val) => setState(() => _selectedSingleEmployeeId = val),
-                  validator: (val) => val == null ? 'Wajib pilih pegawai yang ditugaskan' : null,
-                )
-              else ...[
+                ),
+              ] else ...[
                 // Multi-select dropdown for Kelompok
                 InkWell(
                   onTap: () => _showGroupEmployeeDropdownPicker(context),
@@ -534,7 +641,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                     ),
                     child: Text(
                       _selectedGroupEmployeeIds.isEmpty
-                          ? 'Pilih pegawai dari dropdown...'
+                          ? 'Pilih anggota tim dari daftar...'
                           : '${_selectedGroupEmployeeIds.length} Pegawai Dipilih',
                       style: TextStyle(
                         fontSize: 12,
@@ -559,13 +666,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                               ),
                               deleteIcon: const Icon(Icons.close, size: 14, color: AppColors.primary),
                               onDeleted: () {
-                                if (_selectedGroupEmployeeIds.length > 1) {
-                                  setState(() => _selectedGroupEmployeeIds.remove(emp.id));
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Minimal 1 pegawai harus dipilih')),
-                                  );
-                                }
+                                setState(() => _selectedGroupEmployeeIds.remove(emp.id));
                               },
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide.none),
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
