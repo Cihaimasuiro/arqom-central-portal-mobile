@@ -170,65 +170,116 @@ class RequestsService {
       final uri = Uri.parse('${AuthService.baseUrl}/requests');
       final token = await AuthService.getToken();
 
-      final request = http.MultipartRequest('POST', uri);
-      request.headers['Accept'] = 'application/json';
-      if (token != null && token.isNotEmpty) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
-      request.fields['request_type'] = requestType;
-      request.fields['description'] = description;
-      request.fields['start_date'] = startDate;
-
-      if (endDate != null && endDate.isNotEmpty) {
-        request.fields['end_date'] = endDate;
-      }
-      if (startTime != null && startTime.isNotEmpty) {
-        request.fields['start_time'] = startTime;
-      }
-      if (endTime != null && endTime.isNotEmpty) {
-        request.fields['end_time'] = endTime;
-      }
-      if (location != null && location.isNotEmpty) {
-        request.fields['location'] = location;
-      }
-      if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
-        request.fields['tipe_waktu'] = tipeWaktu;
-      }
-      if (tipePeserta != null && tipePeserta.isNotEmpty) {
-        request.fields['tipe_peserta'] = tipePeserta;
-      }
-      if (peserta != null && peserta.isNotEmpty) {
-        for (int i = 0; i < peserta.length; i++) {
-          request.fields['peserta[$i]'] = peserta[i].toString();
-        }
-      }
-
       if (attachment != null && await attachment.exists()) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['Accept'] = 'application/json';
+        if (token != null && token.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+
+        request.fields['request_type'] = requestType;
+        request.fields['description'] = description;
+        request.fields['start_date'] = startDate;
+
+        if (endDate != null && endDate.isNotEmpty) {
+          request.fields['end_date'] = endDate;
+        }
+        if (startTime != null && startTime.isNotEmpty) {
+          request.fields['start_time'] = startTime;
+        }
+        if (endTime != null && endTime.isNotEmpty) {
+          request.fields['end_time'] = endTime;
+        }
+        if (location != null && location.isNotEmpty) {
+          request.fields['location'] = location;
+        }
+        if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+          request.fields['tipe_waktu'] = tipeWaktu;
+        }
+        if (tipePeserta != null && tipePeserta.isNotEmpty) {
+          request.fields['tipe_peserta'] = tipePeserta;
+        }
+        if (peserta != null && peserta.isNotEmpty) {
+          for (int i = 0; i < peserta.length; i++) {
+            request.fields['peserta[$i]'] = peserta[i].toString();
+          }
+        }
+
         final multipartFile = await http.MultipartFile.fromPath(
           'attachment',
           attachment.path,
         );
         request.files.add(multipartFile);
-      }
 
-      final streamedResponse = await request.send();
-      final res = await http.Response.fromStream(streamedResponse);
+        final streamedResponse = await request.send();
+        final res = await http.Response.fromStream(streamedResponse);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final decoded = jsonDecode(res.body);
-        return RequestApiResponse(
-          success: true,
-          message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibuat.',
-          data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
-          statusCode: res.statusCode,
-        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final decoded = jsonDecode(res.body);
+          return RequestApiResponse(
+            success: true,
+            message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibuat.',
+            data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+            statusCode: res.statusCode,
+          );
+        } else {
+          return RequestApiResponse(
+            success: false,
+            message: _extractErrorMessage(res),
+            statusCode: res.statusCode,
+          );
+        }
       } else {
-        return RequestApiResponse(
-          success: false,
-          message: _extractErrorMessage(res),
-          statusCode: res.statusCode,
-        );
+        final body = <String, dynamic>{
+          'request_type': requestType,
+          'description': description,
+          'start_date': startDate,
+        };
+        if (endDate != null && endDate.isNotEmpty) {
+          body['end_date'] = endDate;
+        }
+        if (startTime != null && startTime.isNotEmpty) {
+          body['start_time'] = startTime;
+        }
+        if (endTime != null && endTime.isNotEmpty) {
+          body['end_time'] = endTime;
+        }
+        if (location != null && location.isNotEmpty) {
+          body['location'] = location;
+        }
+        if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+          body['tipe_waktu'] = tipeWaktu;
+        }
+        if (tipePeserta != null && tipePeserta.isNotEmpty) {
+          body['tipe_peserta'] = tipePeserta;
+        }
+        if (peserta != null && peserta.isNotEmpty) {
+          body['peserta'] = peserta;
+        }
+
+        final headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        };
+
+        final res = await http.post(uri, headers: headers, body: jsonEncode(body));
+
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final decoded = jsonDecode(res.body);
+          return RequestApiResponse(
+            success: true,
+            message: decoded['message']?.toString() ?? 'Pengajuan berhasil dibuat.',
+            data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+            statusCode: res.statusCode,
+          );
+        } else {
+          return RequestApiResponse(
+            success: false,
+            message: _extractErrorMessage(res),
+            statusCode: res.statusCode,
+          );
+        }
       }
     } catch (e) {
       return RequestApiResponse(
@@ -258,67 +309,118 @@ class RequestsService {
       final uri = Uri.parse('${AuthService.baseUrl}/requests/$id');
       final token = await AuthService.getToken();
 
-      final request = http.MultipartRequest('POST', uri);
-      request.headers['Accept'] = 'application/json';
-      if (token != null && token.isNotEmpty) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
-      // Method spoofing for multipart PUT
-      request.fields['_method'] = 'PUT';
-      request.fields['request_type'] = requestType;
-      request.fields['description'] = description;
-      request.fields['start_date'] = startDate;
-
-      if (endDate != null && endDate.isNotEmpty) {
-        request.fields['end_date'] = endDate;
-      }
-      if (startTime != null && startTime.isNotEmpty) {
-        request.fields['start_time'] = startTime;
-      }
-      if (endTime != null && endTime.isNotEmpty) {
-        request.fields['end_time'] = endTime;
-      }
-      if (location != null && location.isNotEmpty) {
-        request.fields['location'] = location;
-      }
-      if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
-        request.fields['tipe_waktu'] = tipeWaktu;
-      }
-      if (tipePeserta != null && tipePeserta.isNotEmpty) {
-        request.fields['tipe_peserta'] = tipePeserta;
-      }
-      if (peserta != null && peserta.isNotEmpty) {
-        for (int i = 0; i < peserta.length; i++) {
-          request.fields['peserta[$i]'] = peserta[i].toString();
-        }
-      }
-
       if (attachment != null && await attachment.exists()) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['Accept'] = 'application/json';
+        if (token != null && token.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+
+        // Method spoofing for multipart PUT
+        request.fields['_method'] = 'PUT';
+        request.fields['request_type'] = requestType;
+        request.fields['description'] = description;
+        request.fields['start_date'] = startDate;
+
+        if (endDate != null && endDate.isNotEmpty) {
+          request.fields['end_date'] = endDate;
+        }
+        if (startTime != null && startTime.isNotEmpty) {
+          request.fields['start_time'] = startTime;
+        }
+        if (endTime != null && endTime.isNotEmpty) {
+          request.fields['end_time'] = endTime;
+        }
+        if (location != null && location.isNotEmpty) {
+          request.fields['location'] = location;
+        }
+        if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+          request.fields['tipe_waktu'] = tipeWaktu;
+        }
+        if (tipePeserta != null && tipePeserta.isNotEmpty) {
+          request.fields['tipe_peserta'] = tipePeserta;
+        }
+        if (peserta != null && peserta.isNotEmpty) {
+          for (int i = 0; i < peserta.length; i++) {
+            request.fields['peserta[$i]'] = peserta[i].toString();
+          }
+        }
+
         final multipartFile = await http.MultipartFile.fromPath(
           'attachment',
           attachment.path,
         );
         request.files.add(multipartFile);
-      }
 
-      final streamedResponse = await request.send();
-      final res = await http.Response.fromStream(streamedResponse);
+        final streamedResponse = await request.send();
+        final res = await http.Response.fromStream(streamedResponse);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final decoded = jsonDecode(res.body);
-        return RequestApiResponse(
-          success: true,
-          message: decoded['message']?.toString() ?? 'Pengajuan berhasil diperbarui.',
-          data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
-          statusCode: res.statusCode,
-        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final decoded = jsonDecode(res.body);
+          return RequestApiResponse(
+            success: true,
+            message: decoded['message']?.toString() ?? 'Pengajuan berhasil diperbarui.',
+            data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+            statusCode: res.statusCode,
+          );
+        } else {
+          return RequestApiResponse(
+            success: false,
+            message: _extractErrorMessage(res),
+            statusCode: res.statusCode,
+          );
+        }
       } else {
-        return RequestApiResponse(
-          success: false,
-          message: _extractErrorMessage(res),
-          statusCode: res.statusCode,
-        );
+        final body = <String, dynamic>{
+          'request_type': requestType,
+          'description': description,
+          'start_date': startDate,
+        };
+        if (endDate != null && endDate.isNotEmpty) {
+          body['end_date'] = endDate;
+        }
+        if (startTime != null && startTime.isNotEmpty) {
+          body['start_time'] = startTime;
+        }
+        if (endTime != null && endTime.isNotEmpty) {
+          body['end_time'] = endTime;
+        }
+        if (location != null && location.isNotEmpty) {
+          body['location'] = location;
+        }
+        if (tipeWaktu != null && tipeWaktu.isNotEmpty) {
+          body['tipe_waktu'] = tipeWaktu;
+        }
+        if (tipePeserta != null && tipePeserta.isNotEmpty) {
+          body['tipe_peserta'] = tipePeserta;
+        }
+        if (peserta != null && peserta.isNotEmpty) {
+          body['peserta'] = peserta;
+        }
+
+        final headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        };
+
+        final res = await http.put(uri, headers: headers, body: jsonEncode(body));
+
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final decoded = jsonDecode(res.body);
+          return RequestApiResponse(
+            success: true,
+            message: decoded['message']?.toString() ?? 'Pengajuan berhasil diperbarui.',
+            data: decoded['data'] is Map<String, dynamic> ? decoded['data'] : null,
+            statusCode: res.statusCode,
+          );
+        } else {
+          return RequestApiResponse(
+            success: false,
+            message: _extractErrorMessage(res),
+            statusCode: res.statusCode,
+          );
+        }
       }
     } catch (e) {
       return RequestApiResponse(

@@ -339,13 +339,13 @@ class _RequestsScreenState extends State<RequestsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Perjalanan Dinas Kelompok',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+                            Text(
+                              item.requestType == 'lembur' ? 'Lembur Tim / Kelompok' : 'Perjalanan Dinas Kelompok',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Anda terdaftar sebagai peserta oleh koordinator (${item.employee?.name ?? "-"}). Pembatalan hanya dapat dilakukan oleh koordinator.',
+                              'Anda terdaftar sebagai peserta oleh pembuat pengajuan (${item.employee?.name ?? "-"}). Pembatalan hanya dapat dilakukan oleh pembuat pengajuan.',
                               style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
                             ),
                           ],
