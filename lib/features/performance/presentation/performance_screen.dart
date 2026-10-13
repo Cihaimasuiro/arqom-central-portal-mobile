@@ -96,11 +96,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                 filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.1),
-                  child: const Center(
-                    child: ArtechLoadingWidget(
-                      size: 84,
-                      message: 'Memperbarui performa...',
-                    ),
+                  child: ArtechLoadingWidget.overlayCard(
+                    message: 'Memperbarui performa...',
                   ),
                 ),
               ),

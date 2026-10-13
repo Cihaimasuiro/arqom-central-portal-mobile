@@ -806,7 +806,7 @@ class _DinasLuarScreenState extends State<DinasLuarScreen> {
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const ArtechLoadingWidget.small(size: 24)
+                    ? ArtechLoadingWidget.button(size: 20)
                     : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Dinas', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],

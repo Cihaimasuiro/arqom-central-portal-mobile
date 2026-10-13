@@ -123,11 +123,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.1),
-                  child: const Center(
-                    child: ArtechLoadingWidget(
-                      size: 84,
-                      message: 'Memperbarui data presensi...',
-                    ),
+                  child: ArtechLoadingWidget.overlayCard(
+                    message: 'Memperbarui data presensi...',
                   ),
                 ),
               ),
@@ -570,7 +567,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           future: _summaryFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(padding: EdgeInsets.all(20), child: ArtechLoadingWidget(size: 64)));
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: ArtechLoadingWidget(size: 54, showHalo: false)),
+              );
             }
             final summaryData = snapshot.data?['summary'] ?? {'present': 0, 'late': 0, 'leave': 0, 'absent': 0};
             return GridView.count(
@@ -665,7 +665,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 future: _summaryFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: ArtechLoadingWidget(size: 64));
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
+                      child: Center(child: ArtechLoadingWidget(size: 48, showHalo: false)),
+                    );
                   }
                   final calendarData = snapshot.data?['calendar'] as List<dynamic>? ?? [];
                   if (calendarData.isEmpty) {
@@ -810,7 +813,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           future: _historyFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(padding: EdgeInsets.all(20), child: ArtechLoadingWidget(size: 64, message: 'Memuat riwayat...')));
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: ArtechLoadingWidget(size: 56, message: 'Memuat riwayat...')),
+              );
             } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
               return Container(
                 width: double.infinity,

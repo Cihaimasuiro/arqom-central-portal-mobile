@@ -241,11 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
                 child: Container(
                   color: Colors.black.withValues(alpha: 0.1),
-                  child: const Center(
-                    child: ArtechLoadingWidget(
-                      size: 84,
-                      message: 'Memperbarui data...',
-                    ),
+                  child: ArtechLoadingWidget.overlayCard(
+                    message: 'Memperbarui data...',
                   ),
                 ),
               ),

@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceContainerLowest,
       body: _isLoading 
-          ? const Center(child: ArtechLoadingWidget(size: 84, message: 'Memuat profil...'))
+          ? const ArtechLoadingWidget.fullScreen(size: 80, message: 'Memuat profil...')
           : Stack(
               children: [
                 RefreshIndicator(
@@ -173,11 +173,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
                       child: Container(
                         color: Colors.black.withValues(alpha: 0.1),
-                        child: const Center(
-                          child: ArtechLoadingWidget(
-                            size: 84,
-                            message: 'Memperbarui profil...',
-                          ),
+                        child: ArtechLoadingWidget.overlayCard(
+                          message: 'Memperbarui profil...',
                         ),
                       ),
                     ),

@@ -174,7 +174,7 @@ class _CutiTahunanScreenState extends State<CutiTahunanScreen> {
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const ArtechLoadingWidget.small(size: 24)
+                    ? ArtechLoadingWidget.button(size: 20)
                     : Text(widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],

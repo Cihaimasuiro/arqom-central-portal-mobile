@@ -1151,14 +1151,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
   Widget _buildMyRequestsList() {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
-          child: ArtechLoadingWidget(
-            size: 80,
-            message: 'Memuat daftar pengajuan...',
-          ),
-        ),
+      return ArtechLoadingWidget.page(
+        message: 'Memuat daftar pengajuan...',
       );
     }
 
@@ -1584,14 +1578,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
   Widget _buildApprovalsList() {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
-          child: ArtechLoadingWidget(
-            size: 80,
-            message: 'Memuat daftar persetujuan...',
-          ),
-        ),
+      return ArtechLoadingWidget.page(
+        message: 'Memuat daftar persetujuan...',
       );
     }
 

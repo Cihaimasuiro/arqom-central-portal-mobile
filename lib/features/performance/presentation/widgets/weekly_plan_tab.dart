@@ -176,14 +176,8 @@ class _WeeklyPlanTabState extends State<WeeklyPlanTab> {
         const SizedBox(height: 16),
 
         if (_isLoading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: ArtechLoadingWidget(
-                size: 76,
-                message: 'Memuat rencana mingguan...',
-              ),
-            ),
+          ArtechLoadingWidget.page(
+            message: 'Memuat rencana mingguan...',
           )
         else if (_errorMessage != null)
           Center(

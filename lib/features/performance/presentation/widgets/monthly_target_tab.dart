@@ -149,14 +149,8 @@ class _MonthlyTargetTabState extends State<MonthlyTargetTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
-          child: ArtechLoadingWidget(
-            size: 76,
-            message: 'Memuat target bulanan...',
-          ),
-        ),
+      return ArtechLoadingWidget.page(
+        message: 'Memuat target bulanan...',
       );
     }
 

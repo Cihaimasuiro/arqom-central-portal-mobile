@@ -338,14 +338,8 @@ class _WeeklyReviewTabState extends State<WeeklyReviewTab> {
         const SizedBox(height: 16),
 
         if (_isLoading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: ArtechLoadingWidget(
-                size: 76,
-                message: 'Memuat review mingguan...',
-              ),
-            ),
+          ArtechLoadingWidget.page(
+            message: 'Memuat review mingguan...',
           )
         else if (_errorMessage != null)
           Center(

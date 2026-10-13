@@ -1,17 +1,17 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 /// Animated ARTECH loading indicator based accurately on the original
 /// ARTECH loading animation prototype in `logo/ARTECH_Animasi_Loading_Akurat.html`.
 ///
 /// Features:
-/// - Smooth 3.2s looping animation cycle
+/// - Smooth looping animation cycle with adjustable cadence (default 2.2s for responsive in-app loading)
 /// - Sweeping conic reveal of the orange/blue ring (`logo/artech_ring.png`)
 /// - Sliding & scaling central symbol emblem (`logo/artech_symbol.png`)
 /// - Sliding & scaling branded text (`logo/artech_text.png`)
 /// - Dynamic orange ambient halo glow
 /// - Finish pulse effect on the full logo (`logo/artech_full.png`)
+/// - Full-featured presets: `.small()`, `.button()`, `.page()`, `.overlayCard()`, `.fullScreen()`, and `.showLoadingDialog()`
 class ArtechLoadingWidget extends StatefulWidget {
   /// Dimension (width & height) of the loading logo stage.
   final double size;
@@ -40,7 +40,7 @@ class ArtechLoadingWidget extends StatefulWidget {
   /// Whether the animation loops continuously. If false, plays once and stays fully revealed.
   final bool repeat;
 
-  /// Total duration of one animation cycle. Defaults to 3.2 seconds.
+  /// Total duration of one animation cycle. Defaults to 2.2 seconds for responsive in-app feedback.
   final Duration duration;
 
   /// Callback fired when the animation completes its reveal cycle (only when repeat is false).
@@ -48,7 +48,7 @@ class ArtechLoadingWidget extends StatefulWidget {
 
   const ArtechLoadingWidget({
     super.key,
-    this.size = 80.0,
+    this.size = 72.0,
     this.message,
     this.messageStyle,
     this.showHalo = true,
@@ -57,14 +57,14 @@ class ArtechLoadingWidget extends StatefulWidget {
     this.isFullScreen = false,
     this.backgroundColor,
     this.repeat = true,
-    this.duration = const Duration(milliseconds: 3200),
+    this.duration = const Duration(milliseconds: 2200),
     this.onCompleted,
   });
 
-  /// Compact/small preset for inline badges, buttons, or tight list items.
+  /// Compact preset for small inline badges or chips.
   const ArtechLoadingWidget.small({
     super.key,
-    this.size = 28.0,
+    this.size = 24.0,
     this.message,
     this.messageStyle,
     this.showHalo = false,
@@ -73,13 +73,13 @@ class ArtechLoadingWidget extends StatefulWidget {
   })  : isFullScreen = false,
         backgroundColor = null,
         repeat = true,
-        duration = const Duration(milliseconds: 3200),
+        duration = const Duration(milliseconds: 2200),
         onCompleted = null;
 
   /// Full screen loading screen with subtle radial backdrop.
   const ArtechLoadingWidget.fullScreen({
     super.key,
-    this.size = 110.0,
+    this.size = 96.0,
     this.message = 'Memuat...',
     this.messageStyle,
     this.showHalo = true,
@@ -88,8 +88,106 @@ class ArtechLoadingWidget extends StatefulWidget {
     this.backgroundColor,
   })  : isFullScreen = true,
         repeat = true,
-        duration = const Duration(milliseconds: 3200),
+        duration = const Duration(milliseconds: 2200),
         onCompleted = null;
+
+  /// In-page tab or list loading state with clean vertical breathing room.
+  static Widget page({
+    String? message,
+    double size = 68.0,
+    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(vertical: 48),
+  }) {
+    return Center(
+      child: Padding(
+        padding: padding,
+        child: ArtechLoadingWidget(
+          size: size,
+          message: message,
+          showHalo: true,
+        ),
+      ),
+    );
+  }
+
+  /// Button loading badge with a crisp white circular badge background.
+  /// Ensures that on dark or primary-colored buttons (e.g. #0037B0),
+  /// the navy blue and orange parts of the ARTECH logo pop with 100% clarity.
+  static Widget button({
+    double size = 18.0,
+    Color badgeColor = Colors.white,
+  }) {
+    final badgeDiameter = size + 10.0;
+    return Center(
+      child: Container(
+        width: badgeDiameter,
+        height: badgeDiameter,
+        decoration: BoxDecoration(
+          color: badgeColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Center(
+          child: ArtechLoadingWidget.small(size: size),
+        ),
+      ),
+    );
+  }
+
+  /// Elegant floating overlay card for pull-to-refresh or background synchronization.
+  /// Encloses the animated logo and status text in a frosted white rounded card.
+  static Widget overlayCard({
+    String message = 'Memperbarui data...',
+    double size = 64.0,
+  }) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(
+            color: const Color(0xFFF1F5F9),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ArtechLoadingWidget(
+              size: size,
+              showHalo: true,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   /// Shows a modal dialog containing the ARTECH animated loading widget.
   static Future<void> showLoadingDialog(
@@ -108,7 +206,7 @@ class ArtechLoadingWidget extends StatefulWidget {
           elevation: 0,
           insetPadding: const EdgeInsets.symmetric(horizontal: 40),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -124,16 +222,16 @@ class ArtechLoadingWidget extends StatefulWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const ArtechLoadingWidget(
-                  size: 84.0,
+                  size: 72.0,
                   showHalo: true,
                 ),
                 if (message.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Text(
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1E293B),
                     ),
@@ -258,7 +356,6 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           ringSweep = 1.0;
           ringScale = 1.0;
         } else {
-          // If repeat is false, keep the ring fully revealed!
           if (!widget.repeat) {
             ringOpacity = 1.0;
           } else {
@@ -291,7 +388,6 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           symbolTranslateY = 0.0;
           symbolScale = 1.0;
         } else {
-          // If repeat is false, keep the symbol fully revealed!
           if (!widget.repeat) {
             symbolOpacity = 1.0;
           } else {
@@ -325,7 +421,6 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
             textTranslateY = 0.0;
             textScale = 1.0;
           } else {
-            // If repeat is false, keep the text fully revealed!
             if (!widget.repeat) {
               textOpacity = 1.0;
             } else {
@@ -357,7 +452,11 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           pulseScale = _lerp(0.998, 1.012, p);
         } else {
           final p = (t - 0.84) / 0.16;
-          pulseOpacity = _lerp(0.12, 0.0, p);
+          if (!widget.repeat) {
+            pulseOpacity = 0.0;
+          } else {
+            pulseOpacity = _lerp(0.12, 0.0, p);
+          }
           pulseScale = _lerp(1.012, 1.0, p);
         }
 
@@ -366,6 +465,7 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
           height: stageSize,
           child: Stack(
             alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
               // Layer 0: Halo Glow
               if (widget.showHalo && haloOpacity > 0.001)
@@ -374,17 +474,17 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
                   child: Opacity(
                     opacity: haloOpacity.clamp(0.0, 1.0),
                     child: Container(
-                      width: stageSize * 0.85,
-                      height: stageSize * 0.85,
+                      width: stageSize * 0.90,
+                      height: stageSize * 0.90,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Color(0x3BFE961D), // rgba(254,150,29, .23)
-                            Color(0x1FFE961D), // rgba(254,150,29, .12)
+                            Color(0x35FE961D), // rgba(254,150,29, .21)
+                            Color(0x18FE961D), // rgba(254,150,29, .09)
                             Color(0x00FE961D), // transparent
                           ],
-                          stops: [0.0, 0.38, 0.75],
+                          stops: [0.0, 0.40, 0.78],
                         ),
                       ),
                     ),
@@ -472,10 +572,10 @@ class _ArtechLoadingWidgetState extends State<ArtechLoadingWidget>
             textAlign: TextAlign.center,
             style: widget.messageStyle ??
                 TextStyle(
-                  fontSize: 13,
+                  fontSize: (stageSize * 0.17).clamp(11.0, 13.5),
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                  color: widget.messageColor ?? AppColors.onSurfaceVariant,
+                  letterSpacing: 0.25,
+                  color: widget.messageColor ?? const Color(0xFF64748B),
                 ),
           ),
         ],

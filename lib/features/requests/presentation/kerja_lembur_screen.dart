@@ -559,7 +559,7 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
         centerTitle: true,
       ),
       body: _loadingMeta
-          ? const Center(child: ArtechLoadingWidget(size: 84, message: 'Memuat data lembur...'))
+          ? ArtechLoadingWidget.page(message: 'Memuat data lembur...')
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -897,7 +897,7 @@ class _KerjaLemburScreenState extends State<KerjaLemburScreen> {
             elevation: 0,
           ),
           child: _isLoading
-              ? const ArtechLoadingWidget.small(size: 24)
+              ? ArtechLoadingWidget.button(size: 20)
               : Text(
                   widget.existingItem != null ? 'Simpan Perubahan' : 'Kirim Pengajuan Lembur',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
